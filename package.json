@@ -1,0 +1,22 @@
+{
+  "name": "protectora-web2",
+  "version": "1.0.0",
+  "private": true,
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "prisma:generate": "npx prisma generate",
+    "prisma:push": "npx prisma db push"
+  },
+  "devDependencies": {
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "typescript": "^7.0.2"
+  }
+}

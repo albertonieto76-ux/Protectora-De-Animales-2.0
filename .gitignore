@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Archivos de entorno y credenciales
+.env
+.env.local
+.env.*.local
+
+# Registros y errores
+*.log
+npm-debug.log*
+
+# Carpetas de compilación o distribución
+/dist/
+/build/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Directorios de editores de código
+.vscode/
+.idea/
