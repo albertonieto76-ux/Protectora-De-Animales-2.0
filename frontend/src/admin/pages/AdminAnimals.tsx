@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AdminLayout } from "../layout/AdminLayout";
 import { getAnimales, createAnimal, deleteAnimal } from "../../api.js";
 import "../styles/adminPages.css";
@@ -6,12 +7,13 @@ import "../styles/adminPages.css";
 export const AdminAnimals = () => {
   const [animals, setAnimals] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [expandedAnimalId, setExpandedAnimalId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     species: "Perro",
     age: "",
     description: "",
-    imageUrl: "",
+    images: [] as File[],
   });
 
   const loadAnimals = () => {
@@ -20,9 +22,9 @@ export const AdminAnimals = () => {
       .catch((err) => {
         console.warn("No se pudieron cargar animales de la API, usando mock:", err);
         setAnimals([
-          { id: 1, name: "Max", species: "Perro", age: 3, description: "Amigable y activo", imageUrl: "" },
-          { id: 2, name: "Luna", species: "Gato", age: 2, description: "Tranquila y cariñosa", imageUrl: "" },
-          { id: 3, name: "Rocky", species: "Perro", age: 5, description: "Muy obediente", imageUrl: "" },
+          { id: 1, name: "Max", species: "Perro", age: 3, description: "Amigable y activo", images: [] },
+          { id: 2, name: "Luna", species: "Gato", age: 2, description: "Tranquila y cariñosa", images: [] },
+          { id: 3, name: "Rocky", species: "Perro", age: 5, description: "Muy obediente", images: [] },
         ]);
       });
   };
@@ -31,19 +33,31 @@ export const AdminAnimals = () => {
     loadAnimals();
   }, []);
 
+  const resetForm = () => {
+    setFormData({ name: "", species: "Perro", age: "", description: "", images: [] });
+    setShowForm(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createAnimal({
-        ...formData,
-        age: formData.age ? parseInt(formData.age, 10) : null,
-      });
-      setFormData({ name: "", species: "Perro", age: "", description: "", imageUrl: "" });
-      setShowForm(false);
+      const payload = new FormData();
+      payload.append("name", formData.name);
+      payload.append("species", formData.species);
+      if (formData.age) payload.append("age", formData.age);
+      if (formData.description) payload.append("description", formData.description);
+      formData.images.forEach((file) => payload.append("images", file));
+      await createAnimal(payload);
+
+      resetForm();
       loadAnimals();
     } catch (err) {
       alert("Error al crear el animal. Verifica que el backend esté ejecutándose.");
     }
+  };
+
+  const togglePreview = (animalId: number) => {
+    setExpandedAnimalId((current) => (current === animalId ? null : animalId));
   };
 
   const handleDelete = async (id: number) => {
@@ -106,13 +120,27 @@ export const AdminAnimals = () => {
               </div>
 
               <div className="form-group">
-                <label>URL Imagen</label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                />
+                <label>Fotos del animal (hasta 10)</label>
+                <label className="file-picker-btn">
+                  Seleccionar archivos
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="file-picker-input"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        images: e.target.files ? Array.from(e.target.files) : [],
+                      })
+                    }
+                  />
+                </label>
+                <div className="file-picker-status">
+                  {formData.images.length > 0
+                    ? `${formData.images.length} archivo(s) seleccionado(s)`
+                    : "No se ha elegido ningún archivo"}
+                </div>
               </div>
             </div>
 
@@ -125,9 +153,14 @@ export const AdminAnimals = () => {
               />
             </div>
 
-            <button type="submit" className="admin-btn-primary">
-              Guardar Animal
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button type="submit" className="admin-btn-primary">
+                Guardar Animal
+              </button>
+              <button type="button" className="admin-btn-secondary" onClick={resetForm}>
+                Cancelar
+              </button>
+            </div>
           </form>
         )}
 
@@ -148,21 +181,51 @@ export const AdminAnimals = () => {
               </thead>
               <tbody>
                 {animals.map((animal) => (
-                  <tr key={animal.id}>
-                    <td>#{animal.id}</td>
-                    <td><strong>{animal.name || animal.nombre}</strong></td>
-                    <td>{animal.species || animal.especie}</td>
-                    <td>{animal.age || animal.edad ? `${animal.age || animal.edad} años` : "N/D"}</td>
-                    <td>{animal.description || animal.descripcion || "Sin descripción"}</td>
-                    <td>
-                      <button
-                        className="admin-btn-danger"
-                        onClick={() => handleDelete(animal.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
+                  <Fragment key={animal.id}>
+                    <tr>
+                      <td>#{animal.id}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="animal-name-link"
+                          onClick={() => togglePreview(animal.id)}
+                        >
+                          <strong>{animal.name || animal.nombre}</strong>
+                        </button>
+                      </td>
+                      <td>{animal.species || animal.especie}</td>
+                      <td>{animal.age || animal.edad ? `${animal.age || animal.edad} años` : "N/D"}</td>
+                      <td>{animal.description || animal.descripcion || "Sin descripción"}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <Link
+                            to={`/admin/animals/${animal.id}/edit`}
+                            className="admin-btn-primary"
+                            style={{ textDecoration: "none" }}
+                          >
+                            Modificar
+                          </Link>
+                          <button
+                            className="admin-btn-danger"
+                            onClick={() => handleDelete(animal.id)}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedAnimalId === animal.id && animal.images?.length > 0 && (
+                      <tr className="animal-preview-row" key={`preview-${animal.id}`}>
+                        <td colSpan={6}>
+                          <div className="animal-preview-box">
+                            {animal.images.map((src: string, index: number) => (
+                              <img key={`${animal.id}-${index}`} src={src} alt={`${animal.name || animal.nombre} ${index + 1}`} />
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

@@ -6,6 +6,8 @@ import eventsRoutes from "./events.routes.js";
 import donationsRoutes from "./donations.routes.js";
 import adminRoutes from "./admin.routes.js";
 import paymentTypesRoutes from "./paymentTypes.routes.js";
+import authRoutes from "./auth.routes.js";
+import registerRoutes from "./register.routes.js";
 
 const router = Router();
 
@@ -19,6 +21,8 @@ router.use("/volunteers", volunteersRoutes);
 router.use("/events", eventsRoutes);
 router.use("/donations", donationsRoutes);
 router.use("/payment-types", paymentTypesRoutes);
+router.use("/auth", authRoutes);
+router.use("/register", registerRoutes);
 router.use("/admin", adminRoutes);
 
 export { router };

@@ -19,7 +19,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
       species: 'Perro',
       age: 3,
       description: 'Una perrita muy juguetona',
-      imageUrl: 'https://example.com/luna.jpg'
+      images: ['https://example.com/luna.jpg']
     };
 
     const res = await request(app)
@@ -32,7 +32,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
     expect(res.body.species).toBe(animalData.species);
     expect(res.body.age).toBe(animalData.age);
     expect(res.body.description).toBe(animalData.description);
-    expect(res.body.imageUrl).toBe(animalData.imageUrl);
+    expect(res.body.images).toEqual(animalData.images);
 
     // Verify it exists in the database
     const dbAnimal = await prisma.animal.findUnique({

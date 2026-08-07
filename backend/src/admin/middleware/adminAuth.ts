@@ -1,23 +1,23 @@
 import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 
 export const adminAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.headers["x-admin-token"];
-  const adminToken = process.env.ADMIN_TOKEN || "supersecreto123";
+  const token = req.cookies?.admin_token || req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
 
-  // Si no se envía token o no coincide con el token esperado
-  if (token && token === adminToken) {
-    return next();
-  }
-
-  // Permitir por defecto si está en modo desarrollo básico o validar token
-  if (!token && !process.env.ADMIN_TOKEN) {
-    return next();
-  }
-
-  if (token !== adminToken) {
+  if (!token) {
     res.status(401).json({ error: "Acceso no autorizado" });
     return;
   }
 
-  next();
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { role?: string };
+    if (payload.role !== "admin") {
+      res.status(403).json({ error: "Permisos insuficientes" });
+      return;
+    }
+    next();
+  } catch {
+    res.status(401).json({ error: "Sesión inválida o expirada" });
+  }
 };

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./navbar.module.css";
 
 export const Navbar = () => {
-  const [openMenu, setOpenMenu] = useState(false);
+  const navigate = useNavigate();
 
   const toggleTheme = () => {
     const current = document.documentElement.getAttribute("data-theme");
@@ -12,33 +12,30 @@ export const Navbar = () => {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:4000/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.warn("No se pudo cerrar la sesión", err);
+    } finally {
+      navigate("/admin/login");
+    }
+  };
+
   return (
     <header className={styles.navbar}>
-      <div className={styles.left}>
-        <h3 className={styles.title}>Panel Admin</h3>
-      </div>
+      <div className={styles.left} />
 
       <div className={styles.right}>
+        <button className={styles.logoutBtn} onClick={handleLogout}>
+          ⎋ Cerrar sesión
+        </button>
         <button className={styles.themeBtn} onClick={toggleTheme}>
           🌓
         </button>
-
-        <div className={styles.menuWrapper}>
-          <button
-            className={styles.menuBtn}
-            onClick={() => setOpenMenu(!openMenu)}
-          >
-            ☰
-          </button>
-
-          {openMenu && (
-            <div className={styles.dropdown}>
-              <button>Perfil</button>
-              <button>Configuración</button>
-              <button>Cerrar sesión</button>
-            </div>
-          )}
-        </div>
       </div>
     </header>
   );

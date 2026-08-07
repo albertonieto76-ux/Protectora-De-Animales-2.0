@@ -11,10 +11,13 @@ import DonacionesPage from "./pages/DonacionesPage";
 // Admin Pages
 import { Dashboard } from "./admin/pages/Dashboard";
 import { AdminAnimals } from "./admin/pages/AdminAnimals";
+import { AdminAnimalEdit } from "./admin/pages/AdminAnimalEdit";
 import { AdminAdoptions } from "./admin/pages/AdminAdoptions";
 import { AdminVolunteers } from "./admin/pages/AdminVolunteers";
 import { AdminEvents } from "./admin/pages/AdminEvents";
 import { AdminDonations } from "./admin/pages/AdminDonations";
+import { AdminLogin } from "./admin/pages/AdminLogin";
+import { ProtectedAdminRoute } from "./admin/components/ProtectedAdminRoute";
 
 export default function App() {
     return (
@@ -31,13 +34,16 @@ export default function App() {
                 </Route>
 
                 {/* Rutas de Administración */}
-                <Route path="/admin" element={<Dashboard />} />
-                <Route path="/admin/" element={<Dashboard />} />
-                <Route path="/admin/animals" element={<AdminAnimals />} />
-                <Route path="/admin/adoptions" element={<AdminAdoptions />} />
-                <Route path="/admin/volunteers" element={<AdminVolunteers />} />
-                <Route path="/admin/events" element={<AdminEvents />} />
-                <Route path="/admin/donations" element={<AdminDonations />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/admin/" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/admin/dashboard" element={<ProtectedAdminRoute><Dashboard /></ProtectedAdminRoute>} />
+                <Route path="/admin/animals" element={<ProtectedAdminRoute><AdminAnimals /></ProtectedAdminRoute>} />
+                <Route path="/admin/animals/:id/edit" element={<ProtectedAdminRoute><AdminAnimalEdit /></ProtectedAdminRoute>} />
+                <Route path="/admin/adoptions" element={<ProtectedAdminRoute><AdminAdoptions /></ProtectedAdminRoute>} />
+                <Route path="/admin/volunteers" element={<ProtectedAdminRoute><AdminVolunteers /></ProtectedAdminRoute>} />
+                <Route path="/admin/events" element={<ProtectedAdminRoute><AdminEvents /></ProtectedAdminRoute>} />
+                <Route path="/admin/donations" element={<ProtectedAdminRoute><AdminDonations /></ProtectedAdminRoute>} />
             </Routes>
         </BrowserRouter>
     );

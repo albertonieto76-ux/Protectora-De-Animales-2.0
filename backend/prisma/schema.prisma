@@ -12,7 +12,7 @@ model Animal {
   species     String
   age         Int?
   description String?
-  imageUrl    String?
+  images      String[]   @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

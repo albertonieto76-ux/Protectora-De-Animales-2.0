@@ -7,20 +7,22 @@ export async function getAnimales() {
 }
 
 export async function createAnimal(data) {
-    const res = await fetch(`${API_URL}/animals`, {
+    const options = {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
+        body: data instanceof FormData ? data : JSON.stringify(data),
+        ...(data instanceof FormData ? {} : { headers: { "Content-Type": "application/json" } }),
+    };
+    const res = await fetch(`${API_URL}/animals`, options);
     return res.json();
 }
 
 export async function updateAnimal(id, data) {
-    const res = await fetch(`${API_URL}/animals/${id}`, {
+    const options = {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-    });
+        body: data instanceof FormData ? data : JSON.stringify(data),
+        ...(data instanceof FormData ? {} : { headers: { "Content-Type": "application/json" } }),
+    };
+    const res = await fetch(`${API_URL}/animals/${id}`, options);
     return res.json();
 }
 

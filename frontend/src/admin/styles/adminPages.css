@@ -55,6 +55,22 @@
   background-color: #dc2626;
 }
 
+.admin-btn-secondary {
+  background-color: #e2e8f0;
+  color: #334155;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.admin-btn-secondary:hover {
+  background-color: #cbd5e1;
+}
+
 .admin-table-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -119,6 +135,46 @@
   color: #dc2626;
 }
 
+.animal-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.animal-name-link:hover {
+  text-decoration: underline;
+}
+
+.animal-preview-box {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  margin-top: 0;
+  overflow-x: auto;
+  padding: 0.35rem 0.1rem 0.25rem;
+  max-width: 100%;
+}
+
+.animal-preview-box img {
+  width: 70px;
+  height: 80px;
+  flex: 0 0 70px;
+  object-fit: contain;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.animal-preview-row td {
+  background: #ffffff;
+  padding-top: 0.35rem;
+  padding-bottom: 0.7rem;
+}
+
 .form-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -165,9 +221,74 @@
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+.file-picker-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.file-picker-btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.file-picker-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-picker-status {
+  margin-top: 0.45rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 .empty-state {
   padding: 3rem;
   text-align: center;
   color: #64748b;
   font-size: 0.95rem;
+}
+
+.edit-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.edit-photo-thumb {
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.edit-photo-thumb.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.edit-photo-thumb img {
+  width: 100%;
+  height: 96px;
+  object-fit: contain;
+  background: #f8fafc;
+  display: block;
 }

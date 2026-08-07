@@ -23,7 +23,7 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
       species: "Perro",
       age: 3,
       description: "Una perrita muy juguetona",
-      imageUrl: "https://example.com/luna.jpg",
+      images: ["https://example.com/luna.jpg"],
     };
 
     const res = await request(app).post("/api/animals").send(animalData);
@@ -34,7 +34,7 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
     expect(res.body.species).toBe(animalData.species);
     expect(res.body.age).toBe(animalData.age);
     expect(res.body.description).toBe(animalData.description);
-    expect(res.body.imageUrl).toBe(animalData.imageUrl);
+    expect(res.body.images).toEqual(animalData.images);
 
     const dbAnimal = await prisma.animal.findUnique({ where: { id: res.body.id } });
     expect(dbAnimal).not.toBeNull();

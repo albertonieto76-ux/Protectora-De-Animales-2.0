@@ -3,10 +3,11 @@ const ADMIN_TOKEN = "supersecreto123";
 
 // Helper genérico para peticiones
 async function request(endpoint, options = {}) {
+    const isFormData = options.body instanceof FormData;
     const headers = {
-        "Content-Type": "application/json",
         "x-admin-token": ADMIN_TOKEN,
-        ...(options.headers || {})
+        ...(options.headers || {}),
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
     };
 
     const res = await fetch(`${API_URL}${endpoint}`, {
@@ -32,10 +33,19 @@ export const getAdminDashboard = () => request("/admin/dashboard");
 ============================ */
 export const getAnimales = () => request("/animals");
 export const getAnimalById = (id) => request(`/animals/${id}`);
-export const createAnimal = (data) =>
-    request("/animals", { method: "POST", body: JSON.stringify(data) });
-export const updateAnimal = (id, data) =>
-    request(`/animals/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const createAnimal = (data) => {
+  if (data instanceof FormData) {
+    return request("/animals", { method: "POST", body: data });
+  }
+  return request("/animals", { method: "POST", body: JSON.stringify(data) });
+};
+
+export const updateAnimal = (id, data) => {
+  if (data instanceof FormData) {
+    return request(`/animals/${id}`, { method: "PUT", body: data });
+  }
+  return request(`/animals/${id}`, { method: "PUT", body: JSON.stringify(data) });
+};
 export const deleteAnimal = (id) =>
     request(`/animals/${id}`, { method: "DELETE" });
 

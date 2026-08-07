@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { AdminLayout } from "../layout/AdminLayout";
 import { StatCard } from "../components/StatCard";
 import { QuickList } from "../components/QuickList";
-import { DonationsChart } from "../components/DonationsChart";
 import { getAdminDashboard } from "../../api.js";
 import styles from "./dashboard.module.css";
 
@@ -59,9 +58,9 @@ export const Dashboard = () => {
         <StatCard title="Solicitudes" value={stats.totalAdoptions} />
         <StatCard title="Pendientes" value={stats.pendingAdoptions} />
         <StatCard title="Voluntarios" value={stats.totalVolunteers} />
-        <StatCard title="Eventos" value={stats.upcomingEvents} />
         <StatCard title="Donaciones" value={stats.totalDonations} />
         <StatCard title="Total (€)" value={`${stats.totalDonationsAmount} €`} />
+        <StatCard title="Eventos" value={stats.upcomingEvents} />
       </div>
 
       <div className={styles.sections}>
@@ -76,8 +75,6 @@ export const Dashboard = () => {
           items={stats.latestAdoptions || []}
           renderItem={(s: any) => `${s.nombre} → Animal #${s.animalId}`}
         />
-
-        <DonationsChart amount={stats.totalDonationsAmount} />
       </div>
     </AdminLayout>
   );

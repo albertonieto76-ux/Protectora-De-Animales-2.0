@@ -21,7 +21,11 @@ export default function Navbar() {
   const [adopModalOpen, setAdopModalOpen] = useState(false);
   const [animales, setAnimales]           = useState([]);
   const [animalesLoading, setAnimalesLoading] = useState(false);
+  const [speciesOptions, setSpeciesOptions] = useState([]);
+  const [filterSpecies, setFilterSpecies] = useState("Todos");
   const [selectedAnimal, setSelectedAnimal]   = useState(null); // paso 1 → paso 2
+  const [showAnimalDetails, setShowAnimalDetails] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [adopForm, setAdopForm]           = useState(formAdopInicial);
   const [adopEnviando, setAdopEnviando]   = useState(false);
   const [adopEnviado, setAdopEnviado]     = useState(false);
@@ -57,6 +61,22 @@ export default function Navbar() {
   }, [anyModal]);
 
   useEffect(() => {
+    if (!adopModalOpen || !showAnimalDetails || !selectedAnimal?.images?.length) return;
+
+    const handleArrowNavigation = (event) => {
+      if (event.key === "ArrowRight") {
+        setSelectedImageIndex((current) => (current + 1) % selectedAnimal.images.length);
+      }
+      if (event.key === "ArrowLeft") {
+        setSelectedImageIndex((current) => (current - 1 + selectedAnimal.images.length) % selectedAnimal.images.length);
+      }
+    };
+
+    window.addEventListener("keydown", handleArrowNavigation);
+    return () => window.removeEventListener("keydown", handleArrowNavigation);
+  }, [adopModalOpen, showAnimalDetails, selectedAnimal]);
+
+  useEffect(() => {
     async function loadPaymentTypes() {
       try {
         const data = await getPaymentTypes();
@@ -67,6 +87,9 @@ export default function Navbar() {
     }
     loadPaymentTypes();
   }, []);
+
+  const getAnimalSpecies = (animal) =>
+    animal?.species || animal?.especie || animal?.type || animal?.tipo || "";
 
   const handleCopyAccount = async (text) => {
     if (!text) return;
@@ -83,14 +106,25 @@ export default function Navbar() {
   const openAdopModal = async () => {
     setAdopModalOpen(true);
     setSelectedAnimal(null);
+    setShowAnimalDetails(false);
+    setSelectedImageIndex(0);
     setAdopForm(formAdopInicial);
+    setFilterSpecies("Todos");
     setAdopEnviado(false);
     setAnimalesLoading(true);
     try {
       const data = await getAnimales();
       setAnimales(data);
+      const species = Array.from(
+        new Set([
+          ...data.map((animal) => getAnimalSpecies(animal)).filter(Boolean),
+          "Otros",
+        ])
+      );
+      setSpeciesOptions(species);
     } catch {
       setAnimales([]);
+      setSpeciesOptions([]);
     } finally {
       setAnimalesLoading(false);
     }
@@ -142,6 +176,29 @@ export default function Navbar() {
       setDonationSending(false);
     }
   };
+
+  const filteredAnimales = animales.filter((a) => {
+    const especie = getAnimalSpecies(a);
+    const knownSpecies = speciesOptions.filter((option) => option !== "Otros");
+
+    if (filterSpecies === "Todos") return true;
+    if (filterSpecies === "Otros") {
+      return !especie || !knownSpecies.includes(especie);
+    }
+
+    return especie === filterSpecies;
+  });
+
+  const visibleSpeciesOptions = speciesOptions.filter((option) => {
+    if (option === "Otros") {
+      return animales.some((animal) => {
+        const especie = getAnimalSpecies(animal);
+        return !especie || !speciesOptions.filter((item) => item !== "Otros").includes(especie);
+      });
+    }
+
+    return animales.some((animal) => getAnimalSpecies(animal) === option);
+  });
 
   return (
     <>
@@ -233,8 +290,75 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* PASO 2: Formulario */}
-            {!adopEnviado && selectedAnimal && (
+            {/* PASO 2: Detalle del animal */}
+            {!adopEnviado && selectedAnimal && showAnimalDetails && (
+              <>
+                <button className="back-btn" onClick={() => { setSelectedAnimal(null); setShowAnimalDetails(false); }}>← Volver a los animales</button>
+                <div className="modal-header">
+                  <span className="modal-emoji">🐾</span>
+                  <h2>{selectedAnimal.name}</h2>
+                  <p>{selectedAnimal.species}{selectedAnimal.age ? ` · ${selectedAnimal.age} años` : ""}</p>
+                </div>
+                <div className="animal-detail-section">
+                  {selectedAnimal.images?.length > 0 ? (
+                    <div className="animal-detail-gallery">
+                      <div className="animal-detail-thumbnails">
+                        {selectedAnimal.images.map((src, index) => (
+                          <button
+                            key={`${src}-${index}`}
+                            type="button"
+                            className={`animal-detail-thumb ${selectedImageIndex === index ? "active" : ""}`}
+                            onClick={() => setSelectedImageIndex(index)}
+                          >
+                            <img src={src} alt={`${selectedAnimal.name} ${index + 1}`} />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="animal-detail-main-block">
+                        <div className="animal-detail-main-image">
+                          <button
+                            type="button"
+                            className="image-nav-btn prev"
+                            onClick={() => setSelectedImageIndex((current) => (current - 1 + selectedAnimal.images.length) % selectedAnimal.images.length)}
+                          >
+                            ‹
+                          </button>
+                          <img src={selectedAnimal.images[selectedImageIndex]} alt={`${selectedAnimal.name} ${selectedImageIndex + 1}`} />
+                          <button
+                            type="button"
+                            className="image-nav-btn next"
+                            onClick={() => setSelectedImageIndex((current) => (current + 1) % selectedAnimal.images.length)}
+                          >
+                            ›
+                          </button>
+                        </div>
+                        <div className="animal-detail-info">
+                          {selectedAnimal.description && <p>{selectedAnimal.description}</p>}
+                          <button className="modal-submit-btn adopt-submit" onClick={() => setShowAnimalDetails(false)}>
+                            🐾 Solicitar adopción
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="animal-card-img">
+                        <span className="animal-placeholder">{selectedAnimal.species === "Perro" ? "🐶" : selectedAnimal.species === "Gato" ? "🐱" : "🐾"}</span>
+                      </div>
+                      <div className="animal-detail-info">
+                        {selectedAnimal.description && <p>{selectedAnimal.description}</p>}
+                        <button className="modal-submit-btn adopt-submit" onClick={() => setShowAnimalDetails(false)}>
+                          🐾 Solicitar adopción
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* PASO 3: Formulario */}
+            {!adopEnviado && selectedAnimal && !showAnimalDetails && (
               <>
                 <button className="back-btn" onClick={() => setSelectedAnimal(null)}>← Volver a los animales</button>
                 <div className="modal-header">
@@ -269,33 +393,59 @@ export default function Navbar() {
                   <p>Elige el animal que quieres acoger en tu hogar y envía tu solicitud.</p>
                 </div>
 
+                <div className="animal-filter-row">
+                  <label htmlFor="animal-type-select">Selecciona el tipo de animal:</label>
+                  <select
+                    id="animal-type-select"
+                    value={filterSpecies}
+                    onChange={(e) => setFilterSpecies(e.target.value)}
+                    className="modal-select"
+                  >
+                    <option value="Todos">Todos</option>
+                    {visibleSpeciesOptions.length > 0 ? (
+                      visibleSpeciesOptions.map((species) => (
+                        <option key={species} value={species}>{species}</option>
+                      ))
+                    ) : (
+                      <option value="Todos" disabled>No hay tipos disponibles</option>
+                    )}
+                  </select>
+                </div>
+
                 {animalesLoading ? (
                   <p className="adopt-loading">Cargando animales disponibles...</p>
                 ) : animales.length === 0 ? (
                   <p className="adopt-empty">No hay animales disponibles en este momento.</p>
                 ) : (
-                  <div className="animals-grid">
-                    {animales.map((a) => (
-                      <button
-                        key={a.id}
-                        className="animal-card-btn"
-                        onClick={() => { setSelectedAnimal(a); setAdopForm(formAdopInicial); }}
-                      >
-                        <div className="animal-card-img">
-                          {a.imageUrl
-                            ? <img src={a.imageUrl} alt={a.name} />
-                            : <span className="animal-placeholder">{a.species === "Perro" ? "🐶" : a.species === "Gato" ? "🐱" : "🐾"}</span>
-                          }
-                        </div>
-                        <div className="animal-card-info">
-                          <strong>{a.name}</strong>
-                          <span>{a.species}{a.age ? ` · ${a.age} años` : ""}</span>
-                          {a.description && <span className="animal-desc">{a.description}</span>}
-                        </div>
-                        <span className="animal-adopt-tag">Adoptar →</span>
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    {filteredAnimales.length === 0 ? (
+                      <p className="adopt-empty">No hay animales de este tipo. Prueba con otro filtro.</p>
+                    ) : (
+                      <div className="animals-grid">
+                        {filteredAnimales.map((a) => (
+                          <button
+                            key={a.id}
+                            className="animal-card-btn"
+                            onClick={() => { setSelectedAnimal(a); setShowAnimalDetails(true); setSelectedImageIndex(0); setAdopForm(formAdopInicial); }}
+                          >
+                            <div className="animal-card-img">
+                              {a.images?.length > 0 ? (
+                                <img src={a.images[0]} alt={a.name} />
+                              ) : (
+                                <span className="animal-placeholder">{a.species === "Perro" ? "🐶" : a.species === "Gato" ? "🐱" : "🐾"}</span>
+                              )}
+                            </div>
+                            <div className="animal-card-info">
+                              <strong>{a.name}</strong>
+                              <span>{a.species}{a.age ? ` · ${a.age} años` : ""}</span>
+                              {a.description && <span className="animal-desc">{a.description}</span>}
+                            </div>
+                            <span className="animal-adopt-tag">Adoptar →</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

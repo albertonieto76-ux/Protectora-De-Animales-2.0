@@ -21,3 +21,6 @@ Thumbs.db
 # Directorios de editores de código
 .vscode/
 .idea/
+
+# Publicaciones y archivos generados
+uploads/
