@@ -1,13 +1,18 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminLayout } from "../layout/AdminLayout";
+import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getAnimales, createAnimal, deleteAnimal } from "../../api.js";
 import "../styles/adminPages.css";
 
 export const AdminAnimals = () => {
   const [animals, setAnimals] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const [expandedAnimalId, setExpandedAnimalId] = useState<number | null>(null);
+  const selectionPanelRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     species: "Perro",
@@ -18,20 +23,34 @@ export const AdminAnimals = () => {
 
   const loadAnimals = () => {
     getAnimales()
-      .then(setAnimals)
+      .then((data) => {
+        setAnimals(data);
+        setLoadError(null);
+      })
       .catch((err) => {
-        console.warn("No se pudieron cargar animales de la API, usando mock:", err);
-        setAnimals([
-          { id: 1, name: "Max", species: "Perro", age: 3, description: "Amigable y activo", images: [] },
-          { id: 2, name: "Luna", species: "Gato", age: 2, description: "Tranquila y cariñosa", images: [] },
-          { id: 3, name: "Rocky", species: "Perro", age: 5, description: "Muy obediente", images: [] },
-        ]);
+        console.warn("No se pudieron cargar animales de la API:", err);
+        setAnimals([]);
+        setLoadError("No se pudieron cargar los animales.");
       });
   };
 
   useEffect(() => {
     loadAnimals();
   }, []);
+
+  useEffect(() => {
+    if (!animals.length) {
+      setSelectedAnimalId(null);
+      return;
+    }
+
+    const exists = animals.some((item) => item.id === selectedAnimalId);
+    if (!exists) {
+      setSelectedAnimalId(animals[0].id);
+    }
+  }, [animals, selectedAnimalId]);
+
+  const selectedAnimal = animals.find((item) => item.id === selectedAnimalId) || null;
 
   const resetForm = () => {
     setFormData({ name: "", species: "Perro", age: "", description: "", images: [] });
@@ -50,9 +69,10 @@ export const AdminAnimals = () => {
       await createAnimal(payload);
 
       resetForm();
+      setActionError(null);
       loadAnimals();
     } catch (err) {
-      alert("Error al crear el animal. Verifica que el backend esté ejecutándose.");
+      setActionError("Error al crear el animal. Verifica que el backend esté ejecutándose.");
     }
   };
 
@@ -60,13 +80,21 @@ export const AdminAnimals = () => {
     setExpandedAnimalId((current) => (current === animalId ? null : animalId));
   };
 
+  const handleSelectAnimal = (animalId: number) => {
+    setSelectedAnimalId(animalId);
+    requestAnimationFrame(() => {
+      selectionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const handleDelete = async (id: number) => {
     if (confirm("¿Estás seguro de eliminar este animal?")) {
       try {
         await deleteAnimal(id);
+        setActionError(null);
         loadAnimals();
       } catch (err) {
-        alert("Error al eliminar el animal.");
+        setActionError("Error al eliminar el animal.");
       }
     }
   };
@@ -83,6 +111,9 @@ export const AdminAnimals = () => {
             {showForm ? "Cancelar" : "+ Nuevo Animal"}
           </button>
         </div>
+
+        {loadError ? <AdminStateNotice message={loadError} variant="warning" compact /> : null}
+        {actionError ? <AdminStateNotice message={actionError} variant="warning" compact /> : null}
 
         {showForm && (
           <form className="form-card" onSubmit={handleSubmit}>
@@ -166,7 +197,7 @@ export const AdminAnimals = () => {
 
         <div className="admin-table-card">
           {animals.length === 0 ? (
-            <div className="empty-state">No hay animales registrados.</div>
+            <AdminStateNotice message="No hay animales registrados." variant="empty" />
           ) : (
             <table className="admin-table">
               <thead>
@@ -182,13 +213,21 @@ export const AdminAnimals = () => {
               <tbody>
                 {animals.map((animal) => (
                   <Fragment key={animal.id}>
-                    <tr>
+                    <tr
+                      className={selectedAnimalId === animal.id ? "admin-row-selected" : ""}
+                      onClick={() => handleSelectAnimal(animal.id)}
+                      style={{ cursor: "pointer" }}
+                    >
                       <td>#{animal.id}</td>
                       <td>
                         <button
                           type="button"
                           className="animal-name-link"
-                          onClick={() => togglePreview(animal.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectAnimal(animal.id);
+                            togglePreview(animal.id);
+                          }}
                         >
                           <strong>{animal.name || animal.nombre}</strong>
                         </button>
@@ -231,6 +270,29 @@ export const AdminAnimals = () => {
             </table>
           )}
         </div>
+
+        {selectedAnimal ? (
+          <div className="admin-selection-panel" ref={selectionPanelRef}>
+            <div className="admin-selection-title">
+              Seleccionado: <strong>{selectedAnimal.name || selectedAnimal.nombre}</strong>
+            </div>
+            <div className="admin-selection-actions">
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                onClick={() => togglePreview(selectedAnimal.id)}
+              >
+                {expandedAnimalId === selectedAnimal.id ? "Ocultar fotos" : "Ver fotos"}
+              </button>
+              <Link to={`/admin/animals/${selectedAnimal.id}/edit`} className="admin-btn-primary admin-link-btn">
+                Modificar
+              </Link>
+              <button type="button" className="admin-btn-danger" onClick={() => handleDelete(selectedAnimal.id)}>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AdminLayout>
   );

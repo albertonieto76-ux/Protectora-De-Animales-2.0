@@ -79,6 +79,16 @@ export const Sidebar = () => {
           {!collapsed && "Donaciones"}
         </NavLink>
 
+        <NavLink
+          to="/admin/security"
+          className={({ isActive }) =>
+            isActive ? styles.active : styles.link
+          }
+        >
+          <span className={styles.icon}>🛡️</span>
+          {!collapsed && "Seguridad"}
+        </NavLink>
+
         <div style={{ marginTop: "auto", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
           <NavLink to="/" className={styles.link}>
             <span className={styles.icon}>🏠</span>

@@ -17,6 +17,7 @@ import { AdminVolunteers } from "./admin/pages/AdminVolunteers";
 import { AdminEvents } from "./admin/pages/AdminEvents";
 import { AdminDonations } from "./admin/pages/AdminDonations";
 import { AdminLogin } from "./admin/pages/AdminLogin";
+import { AdminSecurity } from "./admin/pages/AdminSecurity";
 import { ProtectedAdminRoute } from "./admin/components/ProtectedAdminRoute";
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="/admin/volunteers" element={<ProtectedAdminRoute><AdminVolunteers /></ProtectedAdminRoute>} />
                 <Route path="/admin/events" element={<ProtectedAdminRoute><AdminEvents /></ProtectedAdminRoute>} />
                 <Route path="/admin/donations" element={<ProtectedAdminRoute><AdminDonations /></ProtectedAdminRoute>} />
+                <Route path="/admin/security" element={<ProtectedAdminRoute><AdminSecurity /></ProtectedAdminRoute>} />
             </Routes>
         </BrowserRouter>
     );

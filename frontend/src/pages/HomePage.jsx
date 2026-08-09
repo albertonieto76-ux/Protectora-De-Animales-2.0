@@ -75,6 +75,9 @@ export default function HomePage() {
         }
     };
 
+    const selectedAnimalImages = (selectedAnimal?.images || []).filter(Boolean);
+    const hasMultipleImages = selectedAnimalImages.length > 1;
+
     return (
         <div
             style={{
@@ -89,6 +92,7 @@ export default function HomePage() {
                 style={{
                     background:
                         "linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('https://images.unsplash.com/photo-1558944351-c7e6a1a7c3b9') center/cover",
+                    marginTop: 0,
                     padding: "2rem 2rem 4rem",
                     color: "white",
                     textAlign: "center",
@@ -107,7 +111,7 @@ export default function HomePage() {
                         marginBottom: "1.5rem",
                         fontWeight: "700",
                         animation: "slideDown 1.2s ease-out",
-                        fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+                        fontFamily: "'Lace Rounded Bold', 'Trebuchet MS', 'Comic Sans MS', cursive",
                         letterSpacing: "0.04em",
                         textShadow: "0 2px 8px rgba(0,0,0,0.35)",
                     }}
@@ -220,29 +224,47 @@ export default function HomePage() {
                             ✕
                         </button>
 
-                        <div style={{ display: "grid", gap: "1.25rem", gridTemplateColumns: "1.15fr 0.85fr" }}>
-                            <div>
+                        <div className="home-animal-modal-grid">
+                            <div className="home-animal-gallery-panel">
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.75rem" }}>
-                                    {selectedAnimal.images?.length > 1 && (
+                                    {hasMultipleImages && (
                                         <button type="button" onClick={prevImage} style={modalNavButtonStyle}>
                                             ‹
                                         </button>
                                     )}
-                                    <img
-                                        src={selectedAnimal.images?.[selectedImageIndex] || selectedAnimal.images?.[0] || ""}
-                                        alt={selectedAnimal.name || selectedAnimal.nombre}
-                                        style={{ width: "100%", maxHeight: "320px", objectFit: "cover", borderRadius: "16px" }}
-                                    />
-                                    {selectedAnimal.images?.length > 1 && (
+                                    {selectedAnimalImages.length > 0 ? (
+                                        <img
+                                            src={selectedAnimalImages[selectedImageIndex] || selectedAnimalImages[0]}
+                                            alt={selectedAnimal.name || selectedAnimal.nombre}
+                                            style={{ width: "100%", maxHeight: "min(52vh, 420px)", objectFit: "contain", borderRadius: "16px", background: "#f3f4f6" }}
+                                        />
+                                    ) : (
+                                        <div
+                                            style={{
+                                                width: "100%",
+                                                maxHeight: "min(52vh, 420px)",
+                                                minHeight: "220px",
+                                                borderRadius: "16px",
+                                                background: "#f3f4f6",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: "3rem",
+                                            }}
+                                        >
+                                            🐾
+                                        </div>
+                                    )}
+                                    {hasMultipleImages && (
                                         <button type="button" onClick={nextImage} style={modalNavButtonStyle}>
                                             ›
                                         </button>
                                     )}
                                 </div>
 
-                                {selectedAnimal.images?.length > 1 && (
+                                {hasMultipleImages && (
                                     <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem", overflowX: "auto" }}>
-                                        {selectedAnimal.images.map((src, index) => (
+                                        {selectedAnimalImages.map((src, index) => (
                                             <button
                                                 key={index}
                                                 type="button"
@@ -262,7 +284,7 @@ export default function HomePage() {
                                 )}
                             </div>
 
-                            <div>
+                            <div className="home-animal-form-panel">
                                 <h2 style={{ marginTop: 0, marginBottom: "0.5rem" }}>
                                     {selectedAnimal.name || selectedAnimal.nombre}
                                 </h2>
@@ -368,6 +390,23 @@ export default function HomePage() {
               grid-template-columns: repeat(2, minmax(0, 1fr));
             }
           }
+
+                    .home-animal-modal-grid {
+                        display: grid;
+                        gap: 1.25rem;
+                        grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+                        align-items: start;
+                    }
+
+                    .home-animal-form-panel {
+                        min-width: 0;
+                    }
+
+                    @media (max-width: 980px) {
+                        .home-animal-modal-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
 
           /* MODO OSCURO AUTOMÁTICO */
           @media (prefers-color-scheme: dark) {

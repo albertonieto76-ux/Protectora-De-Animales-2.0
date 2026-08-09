@@ -48,6 +48,7 @@ model Evento {
   descripcion String?
   fecha       DateTime
   lugar       String?
+  images      String[] @default([])
   createdAt   DateTime @default(now())
 }
 

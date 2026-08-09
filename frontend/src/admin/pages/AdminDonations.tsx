@@ -1,14 +1,18 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AdminLayout } from "../layout/AdminLayout";
+import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getDonaciones, getPaymentTypes, createPaymentType, updatePaymentType, deletePaymentType } from "../../api.js";
 import "../styles/adminPages.css";
 
 export const AdminDonations = () => {
   const [donaciones, setDonaciones] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [paymentTypes, setPaymentTypes] = useState<any[]>([]);
   const [paymentTypeForm, setPaymentTypeForm] = useState({ tipo: "", label: "", account: "" });
   const [selectedPaymentType, setSelectedPaymentType] = useState<any>(null);
+  const [selectedPaymentTypeId, setSelectedPaymentTypeId] = useState<number | null>(null);
   const [formErrors, setFormErrors] = useState<{ account?: string; server?: string }>({});
+  const selectionPanelRef = useRef<HTMLDivElement | null>(null);
 
   const validateAccountClient = (tipo: string, account: string) => {
     const a = (account || "").trim();
@@ -37,13 +41,11 @@ export const AdminDonations = () => {
     try {
       const data = await getDonaciones();
       setDonaciones(data);
+      setLoadError(null);
     } catch (err) {
-      console.warn("No se pudieron cargar donaciones, usando mock:", err);
-      setDonaciones([
-        { id: 1, cantidad: 50.0, nombre: "Laura Fernández", email: "laura@example.com", metodo: { label: "Tarjeta" }, createdAt: "2026-08-01" },
-        { id: 2, cantidad: 100.0, nombre: "Anónimo", email: "-", metodo: { label: "Bizum" }, createdAt: "2026-08-02" },
-        { id: 3, cantidad: 25.0, nombre: "Pedro Sánchez", email: "pedro@example.com", metodo: { label: "PayPal" }, createdAt: "2026-08-03" },
-      ]);
+      console.warn("No se pudieron cargar donaciones:", err);
+      setDonaciones([]);
+      setLoadError("No se pudieron cargar las donaciones.");
     }
   };
 
@@ -61,6 +63,18 @@ export const AdminDonations = () => {
     cargarDonaciones();
     cargarPaymentTypes();
   }, []);
+
+  useEffect(() => {
+    if (!paymentTypes.length) {
+      setSelectedPaymentTypeId(null);
+      return;
+    }
+
+    const exists = paymentTypes.some((item) => item.id === selectedPaymentTypeId);
+    if (!exists) {
+      setSelectedPaymentTypeId(paymentTypes[0].id);
+    }
+  }, [paymentTypes, selectedPaymentTypeId]);
 
   const handlePaymentTypeSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,7 +106,24 @@ export const AdminDonations = () => {
 
   const handleEditPaymentType = (type: any) => {
     setSelectedPaymentType(type);
+    setSelectedPaymentTypeId(type.id);
     setPaymentTypeForm({ tipo: type.tipo, label: type.label, account: type.account || "" });
+    requestAnimationFrame(() => {
+      selectionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const handleSelectPaymentType = (typeId: number) => {
+    setSelectedPaymentTypeId(typeId);
+    requestAnimationFrame(() => {
+      selectionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
+  const resetPaymentTypeForm = () => {
+    setSelectedPaymentType(null);
+    setPaymentTypeForm({ tipo: "", label: "", account: "" });
+    setFormErrors({});
   };
 
   const handleDeletePaymentType = async (id: number) => {
@@ -106,6 +137,7 @@ export const AdminDonations = () => {
   };
 
   const totalRecaudado = donaciones.reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
+  const selectedPaymentTypeItem = paymentTypes.find((item) => item.id === selectedPaymentTypeId) || null;
 
   return (
     <AdminLayout>
@@ -119,9 +151,11 @@ export const AdminDonations = () => {
           </div>
         </div>
 
+        {loadError ? <AdminStateNotice message={loadError} variant="warning" compact /> : null}
+
         <div className="admin-table-card" style={{ marginBottom: "1.5rem" }}>
           {donaciones.length === 0 ? (
-            <div className="empty-state">No hay registros de donaciones.</div>
+            <AdminStateNotice message="No hay registros de donaciones." variant="empty" />
           ) : (
             <table className="admin-table">
               <thead>
@@ -214,7 +248,7 @@ export const AdminDonations = () => {
 
             <div className="admin-table-card" style={{ padding: "1rem" }}>
               {paymentTypes.length === 0 ? (
-                <div className="empty-state">No hay tipos de pago configurados.</div>
+                <AdminStateNotice message="No hay tipos de pago configurados." variant="empty" />
               ) : (
                 <table className="admin-table">
                   <thead>
@@ -228,16 +262,34 @@ export const AdminDonations = () => {
                   </thead>
                   <tbody>
                     {paymentTypes.map((type) => (
-                      <tr key={type.id}>
+                        <tr
+                          key={type.id}
+                          className={selectedPaymentTypeId === type.id ? "admin-row-selected" : ""}
+                          onClick={() => handleSelectPaymentType(type.id)}
+                          style={{ cursor: "pointer" }}
+                        >
                         <td>#{type.id}</td>
                         <td>{type.tipo}</td>
                         <td>{type.label}</td>
                         <td>{type.account || "-"}</td>
                         <td>
-                          <button className="admin-btn-primary" style={{ marginRight: "0.5rem" }} onClick={() => handleEditPaymentType(type)}>
+                            <button
+                              className="admin-btn-primary"
+                              style={{ marginRight: "0.5rem" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditPaymentType(type);
+                              }}
+                            >
                             Editar
                           </button>
-                          <button className="admin-btn-danger" onClick={() => handleDeletePaymentType(type.id)}>
+                            <button
+                              className="admin-btn-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePaymentType(type.id);
+                              }}
+                            >
                             Eliminar
                           </button>
                         </td>
@@ -246,6 +298,25 @@ export const AdminDonations = () => {
                   </tbody>
                 </table>
               )}
+
+                {selectedPaymentTypeItem ? (
+                  <div className="admin-selection-panel" style={{ marginTop: "1rem" }} ref={selectionPanelRef}>
+                    <div className="admin-selection-title">
+                      Seleccionado: <strong>{selectedPaymentTypeItem.label}</strong>
+                    </div>
+                    <div className="admin-selection-actions">
+                      <button type="button" className="admin-btn-secondary" onClick={resetPaymentTypeForm}>
+                        Nuevo
+                      </button>
+                      <button type="button" className="admin-btn-primary" onClick={() => handleEditPaymentType(selectedPaymentTypeItem)}>
+                        Modificar
+                      </button>
+                      <button type="button" className="admin-btn-danger" onClick={() => handleDeletePaymentType(selectedPaymentTypeItem.id)}>
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
             </div>
           </div>
         </div>

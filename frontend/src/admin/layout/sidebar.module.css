@@ -1,8 +1,10 @@
 .sidebar {
   width: 240px;
   height: 100vh;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(239, 246, 255, 0.88) 100%),
+    url("/admin-backgrounds/dashboard-hero.jpg") center/cover;
+  border-right: 1px solid #d4deea;
   padding: 1.5rem;
   position: fixed;
   display: flex;
@@ -24,16 +26,20 @@
 .logo {
   font-size: 1.4rem;
   font-weight: bold;
-  color: var(--primary);
+  color: #0f172a;
+  font-family: "Fraunces", Georgia, serif;
   transition: opacity 0.3s ease;
 }
 
 .toggleBtn {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #d4deea;
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
   font-size: 1.2rem;
   cursor: pointer;
-  color: var(--text);
+  color: #334155;
 }
 
 .menu {
@@ -50,15 +56,16 @@
   gap: 12px;
   padding: 0.8rem 1rem;
   border-radius: 8px;
-  color: var(--text);
+  color: #334155;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: "Space Grotesk", "Manrope", sans-serif;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .link:hover {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.85);
   transform: translateX(4px);
 }
 
@@ -72,9 +79,10 @@
 }
 
 .active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #ffffff 0%, #e8eef6 100%);
+  color: #0f172a;
+  border: 1px solid #b8c4d3;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
   transform: translateX(4px);
 }
 

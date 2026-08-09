@@ -6,6 +6,27 @@ import {
   findEventById,
   updateExistingEvent,
 } from "../services/events.service.js";
+import { filesToDataUrls } from "../utils/imageDataUrl.js";
+
+const getImagesFromRequest = (req: Request) => {
+  const files = (req.files as Express.Multer.File[] | undefined) || [];
+  return filesToDataUrls(files);
+};
+
+const normalizeEventPayload = (req: Request) => {
+  const body = req.body as Record<string, any>;
+  const imagesFromBody = typeof body.images === "string"
+    ? [body.images]
+    : Array.isArray(body.images)
+    ? body.images
+    : undefined;
+  const uploadedImages = getImagesFromRequest(req);
+
+  return {
+    ...body,
+    images: uploadedImages.length > 0 ? uploadedImages : imagesFromBody,
+  };
+};
 
 export const getEvents = async (_req: Request, res: Response) => {
   try {
@@ -35,7 +56,8 @@ export const getEventById = async (req: Request, res: Response) => {
 
 export const createEvent = async (req: Request, res: Response) => {
   try {
-    const event = await createNewEvent(req.body);
+    const payload = normalizeEventPayload(req);
+    const event = await createNewEvent(payload);
     res.status(201).json(event);
   } catch (error) {
     console.error(error);
@@ -46,7 +68,8 @@ export const createEvent = async (req: Request, res: Response) => {
 export const updateEvent = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const updated = await updateExistingEvent(id, req.body);
+    const payload = normalizeEventPayload(req);
+    const updated = await updateExistingEvent(id, payload);
 
     if (!updated) {
       return res.status(404).json({ error: "Evento no encontrado" });

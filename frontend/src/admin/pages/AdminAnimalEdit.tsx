@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AdminLayout } from "../layout/AdminLayout";
+import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getAnimalById, updateAnimal } from "../../api.js";
 import "../styles/adminPages.css";
 
@@ -10,6 +11,8 @@ export const AdminAnimalEdit = () => {
 
   const [loading, setLoading] = useState(true);
   const [animal, setAnimal] = useState<any | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [replacePhotoIndex, setReplacePhotoIndex] = useState<number | null>(null);
   const [replacePhotoFile, setReplacePhotoFile] = useState<File | null>(null);
 
@@ -26,6 +29,7 @@ export const AdminAnimalEdit = () => {
       try {
         const data = await getAnimalById(id);
         setAnimal(data);
+        setLoadError(null);
         setFormData({
           name: data.name || data.nombre || "",
           species: data.species || data.especie || "Perro",
@@ -34,15 +38,16 @@ export const AdminAnimalEdit = () => {
           images: [],
         });
       } catch (err) {
-        alert("No se pudo cargar el animal.");
-        navigate("/admin/animals");
+        console.warn("No se pudo cargar el animal:", err);
+        setAnimal(null);
+        setLoadError("No se pudo cargar el animal.");
       } finally {
         setLoading(false);
       }
     }
 
     loadAnimal();
-  }, [id, navigate]);
+  }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,10 +69,10 @@ export const AdminAnimalEdit = () => {
       }
 
       await updateAnimal(animal.id, payload);
-      alert("Cambios guardados correctamente.");
+      setActionError(null);
       navigate("/admin/animals");
     } catch (err) {
-      alert("Error al guardar cambios del animal.");
+      setActionError("Error al guardar cambios del animal.");
     }
   };
 
@@ -75,7 +80,7 @@ export const AdminAnimalEdit = () => {
     return (
       <AdminLayout>
         <div className="admin-page-container">
-          <div className="empty-state">Cargando animal...</div>
+          <AdminStateNotice message="Cargando animal..." variant="loading" />
         </div>
       </AdminLayout>
     );
@@ -85,7 +90,7 @@ export const AdminAnimalEdit = () => {
     return (
       <AdminLayout>
         <div className="admin-page-container">
-          <div className="empty-state">No se encontró el animal.</div>
+          <AdminStateNotice message={loadError || "No se encontró el animal."} variant="warning" />
         </div>
       </AdminLayout>
     );
@@ -97,6 +102,8 @@ export const AdminAnimalEdit = () => {
         <div className="admin-header">
           <h1 className="admin-title">Editar Animal #{animal.id}</h1>
         </div>
+
+        {actionError ? <AdminStateNotice message={actionError} variant="warning" compact /> : null}
 
         <form className="form-card" onSubmit={handleSubmit}>
           <h3>Modificar {animal.name || animal.nombre}</h3>

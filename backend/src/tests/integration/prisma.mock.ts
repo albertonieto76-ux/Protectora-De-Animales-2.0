@@ -25,6 +25,14 @@ export const prismaMock = {
     update: vi.fn(),
     delete: vi.fn(),
   },
+  citaVoluntariado: {
+    count: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
   evento: {
     count: vi.fn(),
     findMany: vi.fn(),

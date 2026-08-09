@@ -9,10 +9,13 @@
     "dev": "tsx watch src/server.ts",
     "prisma:generate": "npx prisma generate",
     "prisma:push": "npx prisma db push",
-    "test": "vitest",
-    "test:unit": "vitest --run src/tests/unit",
-    "test:integration": "vitest --run src/tests/integration",
-    "coverage": "vitest run --coverage"
+    "images:migrate-to-db": "tsx scripts/migrateImagesToDb.ts",
+    "images:migrate-to-db:clean": "tsx scripts/migrateImagesToDb.ts --clean",
+    "seed:load-test": "tsx scripts/seedLoadTestData.ts",
+    "test": "vitest --config src/vitest.config.ts",
+    "test:unit": "vitest --config src/vitest.config.ts --run src/tests/unit",
+    "test:integration": "vitest --config src/vitest.config.ts --run src/tests/integration",
+    "coverage": "vitest --config src/vitest.config.ts run --coverage"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
@@ -34,9 +37,14 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^20.19.43",
     "nodemon": "^3.1.14",
+    "prisma": "^7.9.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.7",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.9.1": true,
+    "prisma@7.9.1": true
   }
 }

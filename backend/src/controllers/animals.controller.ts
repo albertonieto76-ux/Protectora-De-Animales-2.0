@@ -6,10 +6,11 @@ import {
   findAnimalById,
   updateExistingAnimal,
 } from "../services/animals.service.js";
+import { filesToDataUrls } from "../utils/imageDataUrl.js";
 
 const getImagesFromRequest = (req: Request) => {
   const files = (req.files as Express.Multer.File[] | undefined) || [];
-  return files.map((file) => `/uploads/${file.filename}`);
+  return filesToDataUrls(files);
 };
 
 const normalizeAnimalPayload = (req: Request) => {

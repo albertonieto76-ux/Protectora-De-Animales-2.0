@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 .admin-page-container {
   padding: 1rem 0;
   max-width: 1200px;
@@ -79,6 +81,37 @@
   overflow: hidden;
 }
 
+.admin-state-notice {
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.admin-state-compact {
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-state-warning {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.admin-state-empty,
+.admin-state-loading {
+  padding: 3rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.admin-state-empty {
+  background: #ffffff;
+}
+
+.admin-state-loading {
+  background: #f8fafc;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -109,6 +142,66 @@
 
 .admin-table tr:hover {
   background-color: #f8fafc;
+}
+
+.admin-table tr.admin-row-selected {
+  background-color: #eff6ff;
+}
+
+.event-thumb {
+  width: 72px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #dbe3ef;
+  display: block;
+}
+
+.event-thumb-placeholder {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.event-gallery-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.event-gallery-main {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+}
+
+.event-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.event-gallery-thumb-btn {
+  border: 2px solid #dbe3ef;
+  padding: 0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.event-gallery-thumb-btn.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.event-gallery-thumb {
+  width: 88px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
 }
 
 .badge {
@@ -256,11 +349,33 @@
   color: #64748b;
 }
 
-.empty-state {
-  padding: 3rem;
-  text-align: center;
+.quick-list {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.quick-list-title {
+  margin: 0 0 0.9rem;
+  color: #0f172a;
+}
+
+.quick-list ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #334155;
+}
+
+.quick-list li + li {
+  margin-top: 0.5rem;
+}
+
+.quick-list-empty {
+  margin: 0;
   color: #64748b;
-  font-size: 0.95rem;
+  font-style: italic;
 }
 
 .edit-photo-grid {
@@ -291,4 +406,523 @@
   object-fit: contain;
   background: #f8fafc;
   display: block;
+}
+
+.badge-confirmada {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.badge-cancelada {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.volunteer-scheduler-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.95fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.volunteer-calendar-panel,
+.volunteer-list-panel {
+  padding: 1.4rem;
+}
+
+.calendar-toolbar,
+.list-panel-header,
+.editor-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.calendar-overline {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.calendar-title,
+.editor-title,
+.roster-title {
+  margin: 0;
+  color: #0f172a;
+}
+
+.calendar-title {
+  font-size: 1.35rem;
+}
+
+.calendar-nav-actions,
+.editor-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.calendar-grid-wrapper {
+  margin-top: 1.25rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-grid-head {
+  margin-bottom: 0.45rem;
+}
+
+.calendar-weekday {
+  padding: 0.55rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.calendar-grid-body {
+  gap: 0.55rem;
+}
+
+.calendar-day-cell {
+  min-height: 102px;
+  border: 1px solid #dbe3ef;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 0.8rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #334155;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.calendar-day-cell:hover {
+  transform: translateY(-1px);
+  border-color: #93c5fd;
+  box-shadow: 0 12px 24px -20px rgba(37, 99, 235, 0.45);
+}
+
+.calendar-day-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.calendar-day-meta,
+.calendar-day-total {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.adoption-day-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.adoption-day-status {
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.adoption-day-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.adoption-day-status.approved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.adoption-day-status.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.calendar-day-confirmed {
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.calendar-day-selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.calendar-day-outside {
+  opacity: 0.55;
+}
+
+.volunteer-editor-panel {
+  margin-top: 1.4rem;
+  padding-top: 1.3rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.daily-appointments-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.daily-appointment-chip {
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #334155;
+  cursor: pointer;
+}
+
+.daily-appointment-chip.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.empty-inline-state {
+  padding: 1rem 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.volunteer-appointment-form {
+  margin-bottom: 0;
+}
+
+.volunteer-appointment-form h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+.list-counter {
+  min-width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.list-counter.muted {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.appointment-list-scroll,
+.volunteer-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.appointment-list-scroll {
+  margin-top: 1.15rem;
+}
+
+.appointment-list-item {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.appointment-list-item:hover {
+  transform: translateY(-1px);
+  border-color: #93c5fd;
+  box-shadow: 0 12px 24px -24px rgba(37, 99, 235, 0.55);
+}
+
+.appointment-list-item.active {
+  border-color: #2563eb;
+  background: #f8fbff;
+}
+
+.appointment-list-main,
+.appointment-list-meta,
+.volunteer-roster-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.appointment-list-main {
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.appointment-list-main span,
+.appointment-list-meta span,
+.volunteer-roster-item span,
+.volunteer-roster-item small,
+.appointment-list-item p {
+  color: #64748b;
+}
+
+.appointment-list-meta {
+  align-items: center;
+  margin-bottom: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.appointment-list-item p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.volunteer-roster-card {
+  margin-top: 1.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.list-panel-header.compact {
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.volunteer-roster-item {
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 0.95rem;
+  background: #fff;
+}
+
+.volunteer-roster-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+@media (max-width: 1100px) {
+  .volunteer-scheduler-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  .calendar-toolbar,
+  .list-panel-header,
+  .editor-header-row,
+  .appointment-list-main,
+  .appointment-list-meta,
+  .volunteer-roster-item {
+    flex-direction: column;
+  }
+
+  .calendar-grid-body {
+    gap: 0.4rem;
+  }
+
+  .calendar-day-cell {
+    min-height: 88px;
+    padding: 0.65rem;
+  }
+}
+
+/* Unified Admin Theme */
+.admin-page-container {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(254, 240, 138, 0.24), transparent 32%),
+    radial-gradient(circle at 8% 100%, rgba(56, 189, 248, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(239, 246, 255, 0.9) 0%, rgba(254, 242, 242, 0.72) 100%),
+    url("/admin-backgrounds/dashboard-main.jpg") center/cover;
+  border: 1px solid #d8e0ea;
+  border-radius: 20px;
+  padding: 1.15rem;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+.admin-header {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d7e0ea;
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-title {
+  color: #0f172a;
+  font-family: "Fraunces", Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+.admin-btn-primary,
+.admin-btn-secondary,
+.admin-btn-danger {
+  border-radius: 999px;
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.admin-link-btn {
+  text-decoration: none;
+}
+
+.admin-selection-panel {
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #d7e0ea;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.admin-selection-title {
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.admin-selection-title strong {
+  color: #0f172a;
+}
+
+.admin-selection-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.admin-btn-primary {
+  background: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
+  color: #0f172a;
+  border-color: #b8c4d3;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.admin-btn-primary:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #e5edf5 100%);
+  border-color: #334155;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.admin-btn-secondary {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5f9 100%);
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.admin-btn-secondary:hover {
+  background: #e9eef5;
+  border-color: #94a3b8;
+}
+
+.admin-btn-danger {
+  background: linear-gradient(180deg, #fff1f2 0%, #fee2e2 100%);
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.admin-btn-danger:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.admin-table-card,
+.form-card,
+.quick-list,
+.volunteer-roster-item,
+.appointment-list-item,
+.calendar-day-cell {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #d7e0ea;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  backdrop-filter: blur(2px);
+}
+
+.admin-table th {
+  background: #eef3f8;
+  color: #475569;
+}
+
+.admin-table tr:hover {
+  background-color: #f3f7fb;
+}
+
+.form-group label,
+.calendar-overline,
+.quick-list-empty,
+.file-picker-status,
+.appointment-list-item p,
+.appointment-list-main span,
+.appointment-list-meta span,
+.volunteer-roster-item span,
+.volunteer-roster-item small {
+  color: #5b6b80;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.file-picker-btn {
+  border-radius: 10px;
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #334155;
+  box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.14);
+}
+
+.calendar-day-confirmed {
+  background: linear-gradient(180deg, #f4fbff 0%, #e0f2fe 100%);
+  border-color: #93c5fd;
+}
+
+.calendar-day-selected,
+.daily-appointment-chip.active,
+.appointment-list-item.active,
+.edit-photo-thumb.selected,
+.event-gallery-thumb-btn.active {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.16);
+}
+
+@media (max-width: 780px) {
+  .admin-page-container {
+    padding: 0.85rem;
+    border-radius: 16px;
+  }
+
+  .admin-header {
+    padding: 0.8rem;
+  }
+
+  .admin-selection-panel {
+    padding: 0.75rem 0.8rem;
+  }
 }

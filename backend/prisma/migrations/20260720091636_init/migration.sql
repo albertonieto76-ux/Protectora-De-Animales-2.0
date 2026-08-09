@@ -5,7 +5,6 @@ CREATE TABLE "Animal" (
     "species" TEXT NOT NULL,
     "age" INTEGER,
     "description" TEXT,
-    "imageUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

@@ -7,6 +7,15 @@ const DISPONIBILIDADES = ["Fines de semana", "Entre semana", "Mañanas", "Tardes
 const formVolInicial = { nombre: "", email: "", telefono: "", disponibilidad: "" };
 const formAdopInicial = { nombre: "", email: "", telefono: "", mensaje: "" };
 const formDonacionInicial = { cantidad: "", nombre: "", email: "", metodoId: "" };
+const DONATION_PRESETS = {
+  puntual: { label: "Aporte puntual", amount: "20" },
+  veterinaria: { label: "Veterinaria", amount: "35" },
+  alimentacion: { label: "Alimentación", amount: "25" },
+};
+const ADOPTION_MODAL_IMAGE = "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1200&q=80";
+const ADOPTION_LOCAL_FALLBACK_IMAGE = "/hero-hamsters.jpg";
+const DONATION_MODAL_IMAGE = "https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&w=1200&q=80";
+const VOLUNTEER_MODAL_IMAGE = "https://images.unsplash.com/photo-1526976668912-1a811878dd37?auto=format&fit=crop&w=1200&q=80";
 
 export default function Navbar() {
   const [isAdminOpen, setIsAdminOpen]     = useState(false);
@@ -24,6 +33,7 @@ export default function Navbar() {
   const [speciesOptions, setSpeciesOptions] = useState([]);
   const [filterSpecies, setFilterSpecies] = useState("Todos");
   const [selectedAnimal, setSelectedAnimal]   = useState(null); // paso 1 → paso 2
+  const [selectedAnimalImages, setSelectedAnimalImages] = useState([]);
   const [showAnimalDetails, setShowAnimalDetails] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [adopForm, setAdopForm]           = useState(formAdopInicial);
@@ -35,6 +45,7 @@ export default function Navbar() {
   const [donationForm, setDonationForm]           = useState(formDonacionInicial);
   const [donationSending, setDonationSending]     = useState(false);
   const [donationSent, setDonationSent]           = useState(false);
+  const [donationPreset, setDonationPreset]       = useState("puntual");
   const [paymentTypes, setPaymentTypes]           = useState([]);
   const [copiedAccount, setCopiedAccount]         = useState(null);
 
@@ -42,6 +53,19 @@ export default function Navbar() {
   const dropdownRef = useRef(null);
 
   const showAdminMenu = location.pathname !== "/" && location.pathname !== "/eventos";
+
+  const closePageLevelModals = () => {
+    window.dispatchEvent(new Event("close-page-level-modals"));
+  };
+
+  const closeNavbarModals = () => {
+    setAdopModalOpen(false);
+    setDonationModalOpen(false);
+    setVolModalOpen(false);
+    setAdopEnviado(false);
+    setDonationSent(false);
+    setVolEnviado(false);
+  };
 
   /* ── cerrar dropdown al click fuera ── */
   useEffect(() => {
@@ -60,21 +84,28 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ""; };
   }, [anyModal]);
 
+  // Close open modals when navigating to another route so pages are never blocked.
   useEffect(() => {
-    if (!adopModalOpen || !showAnimalDetails || !selectedAnimal?.images?.length) return;
+    closeNavbarModals();
+    setIsAdminOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const activeImagesLength = selectedAnimalImages.length || selectedAnimal?.images?.length || 0;
+    if (!adopModalOpen || !showAnimalDetails || !activeImagesLength) return;
 
     const handleArrowNavigation = (event) => {
       if (event.key === "ArrowRight") {
-        setSelectedImageIndex((current) => (current + 1) % selectedAnimal.images.length);
+        setSelectedImageIndex((current) => (current + 1) % activeImagesLength);
       }
       if (event.key === "ArrowLeft") {
-        setSelectedImageIndex((current) => (current - 1 + selectedAnimal.images.length) % selectedAnimal.images.length);
+        setSelectedImageIndex((current) => (current - 1 + activeImagesLength) % activeImagesLength);
       }
     };
 
     window.addEventListener("keydown", handleArrowNavigation);
     return () => window.removeEventListener("keydown", handleArrowNavigation);
-  }, [adopModalOpen, showAnimalDetails, selectedAnimal]);
+  }, [adopModalOpen, showAnimalDetails, selectedAnimal, selectedAnimalImages]);
 
   useEffect(() => {
     async function loadPaymentTypes() {
@@ -91,6 +122,101 @@ export default function Navbar() {
   const getAnimalSpecies = (animal) =>
     animal?.species || animal?.especie || animal?.type || animal?.tipo || "";
 
+  const normalizeImageSource = (input) => {
+    if (typeof input === "string") {
+      const value = input.trim();
+      return value || null;
+    }
+
+    if (input && typeof input === "object") {
+      const candidate = input.url || input.src || input.path || input.image || input.foto || input.photo || input.thumbnail;
+      return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
+    }
+
+    return null;
+  };
+
+  const getValidAnimalImages = (animal) => {
+    const fromArray = Array.isArray(animal?.images) ? animal.images : [];
+    const fromString = typeof animal?.images === "string"
+      ? (() => {
+          const raw = animal.images.trim();
+          if (!raw) return [];
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed && typeof parsed === "object") {
+              return [parsed];
+            }
+            return [raw];
+          } catch {
+            return raw.includes(",") ? raw.split(",") : [raw];
+          }
+        })()
+      : [];
+    const fromLegacy = [animal?.image, animal?.foto, animal?.photo, animal?.thumbnail].filter(Boolean);
+
+    return [...fromArray, ...fromString, ...fromLegacy]
+      .map((img) => normalizeImageSource(img))
+      .filter(Boolean);
+  };
+
+  const getFirstAnimalImage = (animal) => {
+    const images = getValidAnimalImages(animal);
+    return images[0] || ADOPTION_LOCAL_FALLBACK_IMAGE;
+  };
+
+  const buildFallbackChain = (primarySrc, candidates = []) => {
+    const normalized = [primarySrc, ...candidates, ADOPTION_MODAL_IMAGE, ADOPTION_LOCAL_FALLBACK_IMAGE]
+      .filter((src) => typeof src === "string")
+      .map((src) => src.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(normalized));
+  };
+
+  const handleImageFallback = (event, chain = []) => {
+    const imgEl = event.currentTarget;
+    if (!imgEl) return;
+
+    const currentIndex = Number(imgEl.dataset.fallbackIndex || "0");
+    const nextIndex = currentIndex + 1;
+
+    if (nextIndex < chain.length) {
+      imgEl.dataset.fallbackIndex = String(nextIndex);
+      imgEl.src = chain[nextIndex];
+      return;
+    }
+
+    // Guaranteed last-resort local image to avoid empty cards/details.
+    imgEl.onerror = null;
+    imgEl.src = ADOPTION_LOCAL_FALLBACK_IMAGE;
+  };
+
+  const handleImageLoad = (event) => {
+    const imgEl = event.currentTarget;
+    if (!imgEl) return;
+    imgEl.style.display = "";
+  };
+
+  const getPreferredImageIndex = () => {
+    return 0;
+  };
+
+  const getAnimalPreviewImage = (animal, cardIndex = 0) => {
+    const images = getValidAnimalImages(animal);
+    if (!images.length) return ADOPTION_LOCAL_FALLBACK_IMAGE;
+    const preferredIndex = getPreferredImageIndex(animal, cardIndex);
+    return images[preferredIndex] || images[0] || ADOPTION_LOCAL_FALLBACK_IMAGE;
+  };
+
+  const getAnimalDetailImages = (animal, preferredIndex = 0, maxImages = 4) => {
+    const source = getValidAnimalImages(animal);
+    if (!source.length) return [ADOPTION_LOCAL_FALLBACK_IMAGE];
+    if (source.length <= maxImages) return source;
+    return source.slice(0, maxImages);
+  };
+
   const handleCopyAccount = async (text) => {
     if (!text) return;
     try {
@@ -102,10 +228,18 @@ export default function Navbar() {
     }
   };
 
+  const applyDonationPreset = (presetKey) => {
+    const preset = DONATION_PRESETS[presetKey];
+    if (!preset) return;
+    setDonationPreset(presetKey);
+    setDonationForm((prev) => ({ ...prev, cantidad: preset.amount }));
+  };
+
   /* ── cargar animales al abrir modal adopción ── */
   const openAdopModal = async () => {
     setAdopModalOpen(true);
     setSelectedAnimal(null);
+    setSelectedAnimalImages([]);
     setShowAnimalDetails(false);
     setSelectedImageIndex(0);
     setAdopForm(formAdopInicial);
@@ -153,7 +287,7 @@ export default function Navbar() {
     try {
       await createAdopcion({ ...adopForm, animalId: selectedAnimal.id });
       setAdopEnviado(true);
-      setTimeout(() => { setAdopEnviado(false); setAdopModalOpen(false); setSelectedAnimal(null); }, 2400);
+      setTimeout(() => { setAdopEnviado(false); setAdopModalOpen(false); setSelectedAnimal(null); setSelectedAnimalImages([]); }, 2400);
     } catch (err) {
       console.error("Error al crear solicitud:", err);
     } finally {
@@ -200,28 +334,59 @@ export default function Navbar() {
     return animales.some((animal) => getAnimalSpecies(animal) === option);
   });
 
+  const fallbackDetailImages = selectedAnimal
+    ? getAnimalDetailImages(selectedAnimal, getPreferredImageIndex(selectedAnimal), 4)
+    : [];
+  const activeDetailImages = selectedAnimalImages.length > 0 ? selectedAnimalImages : fallbackDetailImages;
+  const safeDetailIndex = activeDetailImages.length > 0 ? selectedImageIndex % activeDetailImages.length : 0;
+  const currentDetailImage =
+    activeDetailImages[safeDetailIndex] ||
+    getFirstAnimalImage(selectedAnimal) ||
+    ADOPTION_LOCAL_FALLBACK_IMAGE;
+  const currentDetailFallbackChain = selectedAnimal
+    ? buildFallbackChain(currentDetailImage, getValidAnimalImages(selectedAnimal))
+    : [ADOPTION_LOCAL_FALLBACK_IMAGE];
+
   return (
     <>
-      <nav className="main-navbar">
+      <nav className={`main-navbar ${location.pathname === "/" ? "home-navbar" : ""}`}>
         <div className="nav-right">
           {/* ── Botón Adopta Amigos ── */}
           <button
             id="btn-adopta-amigos"
             className="adopt-cta-btn"
-            onClick={openAdopModal}
+            onClick={() => {
+              closeNavbarModals();
+              closePageLevelModals();
+              openAdopModal();
+            }}
           >
             🐾 Adopta Amigos
           </button>
 
           {/* ── Botón Informar Evento ── */}
-          <Link to="/eventos" className="event-cta-btn">
-            📅 Eventos
+          <Link
+            to="/eventos"
+            className="event-cta-btn"
+            onClick={() => {
+              closeNavbarModals();
+              closePageLevelModals();
+            }}
+          >
+            🗓️ Eventos
           </Link>
 
           {/* ── Botón Donar ── */}
           <button
             className="donation-cta-btn"
-            onClick={() => { setDonationForm(formDonacionInicial); setDonationSent(false); setDonationModalOpen(true); }}
+            onClick={() => {
+              closeNavbarModals();
+              closePageLevelModals();
+              setDonationForm({ ...formDonacionInicial, cantidad: DONATION_PRESETS.puntual.amount });
+              setDonationPreset("puntual");
+              setDonationSent(false);
+              setDonationModalOpen(true);
+            }}
           >
             💳 Donar
           </button>
@@ -230,9 +395,15 @@ export default function Navbar() {
           <button
             id="btn-navbar-voluntario"
             className="volunteer-cta-btn"
-            onClick={() => { setVolForm(formVolInicial); setVolEnviado(false); setVolModalOpen(true); }}
+            onClick={() => {
+              closeNavbarModals();
+              closePageLevelModals();
+              setVolForm(formVolInicial);
+              setVolEnviado(false);
+              setVolModalOpen(true);
+            }}
           >
-            🙋 Ser Voluntario
+            🤝 Ser Voluntario
           </button>
 
           {showAdminMenu && (
@@ -293,17 +464,37 @@ export default function Navbar() {
             {/* PASO 2: Detalle del animal */}
             {!adopEnviado && selectedAnimal && showAnimalDetails && (
               <>
-                <button className="back-btn" onClick={() => { setSelectedAnimal(null); setShowAnimalDetails(false); }}>← Volver a los animales</button>
-                <div className="modal-header">
-                  <span className="modal-emoji">🐾</span>
-                  <h2>{selectedAnimal.name}</h2>
-                  <p>{selectedAnimal.species}{selectedAnimal.age ? ` · ${selectedAnimal.age} años` : ""}</p>
+                <button className="back-btn" onClick={() => { setSelectedAnimal(null); setSelectedAnimalImages([]); setShowAnimalDetails(false); }}>← Volver a los animales</button>
+                <div className="modal-editorial-hero compact">
+                  <div className="modal-editorial-media">
+                    <img
+                      src={currentDetailImage}
+                      alt={selectedAnimal.name}
+                      style={{ display: "block" }}
+                      data-fallback-index="0"
+                      onLoad={handleImageLoad}
+                      onError={(e) => handleImageFallback(e, currentDetailFallbackChain)}
+                    />
+                  </div>
+                  <div className="modal-editorial-copy">
+                    <div className="modal-kicker-row">
+                      <span className="modal-kicker">Adopción</span>
+                      <span className="modal-kicker muted">Ficha abierta</span>
+                    </div>
+                    <h2>{selectedAnimal.name}</h2>
+                    <p>{selectedAnimal.description || "Consulta sus imágenes y avanza al formulario cuando lo tengas claro."}</p>
+                    <div className="modal-typology-row">
+                      <span className="modal-typology-pill">{selectedAnimal.species}</span>
+                      {selectedAnimal.age ? <span className="modal-typology-pill">{selectedAnimal.age} años</span> : null}
+                      <span className="modal-typology-pill accent">Perfil adoptable</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="animal-detail-section">
-                  {selectedAnimal.images?.length > 0 ? (
+                  {activeDetailImages.length > 0 ? (
                     <div className="animal-detail-gallery">
                       <div className="animal-detail-thumbnails">
-                        {selectedAnimal.images.map((src, index) => (
+                        {activeDetailImages.map((src, index) => (
                           <button
                             key={`${src}-${index}`}
                             type="button"
@@ -319,15 +510,22 @@ export default function Navbar() {
                           <button
                             type="button"
                             className="image-nav-btn prev"
-                            onClick={() => setSelectedImageIndex((current) => (current - 1 + selectedAnimal.images.length) % selectedAnimal.images.length)}
+                            onClick={() => setSelectedImageIndex((current) => (current - 1 + activeDetailImages.length) % activeDetailImages.length)}
                           >
                             ‹
                           </button>
-                          <img src={selectedAnimal.images[selectedImageIndex]} alt={`${selectedAnimal.name} ${selectedImageIndex + 1}`} />
+                          <img
+                            src={currentDetailImage}
+                            alt={`${selectedAnimal.name} ${safeDetailIndex + 1}`}
+                            style={{ display: "block" }}
+                            data-fallback-index="0"
+                            onLoad={handleImageLoad}
+                            onError={(e) => handleImageFallback(e, currentDetailFallbackChain)}
+                          />
                           <button
                             type="button"
                             className="image-nav-btn next"
-                            onClick={() => setSelectedImageIndex((current) => (current + 1) % selectedAnimal.images.length)}
+                            onClick={() => setSelectedImageIndex((current) => (current + 1) % activeDetailImages.length)}
                           >
                             ›
                           </button>
@@ -343,7 +541,14 @@ export default function Navbar() {
                   ) : (
                     <>
                       <div className="animal-card-img">
-                        <span className="animal-placeholder">{selectedAnimal.species === "Perro" ? "🐶" : selectedAnimal.species === "Gato" ? "🐱" : "🐾"}</span>
+                        <img
+                          src={ADOPTION_LOCAL_FALLBACK_IMAGE}
+                          alt={selectedAnimal.name || "Animal disponible"}
+                          style={{ display: "block" }}
+                          data-fallback-index="0"
+                          onLoad={handleImageLoad}
+                          onError={(e) => handleImageFallback(e, [ADOPTION_LOCAL_FALLBACK_IMAGE])}
+                        />
                       </div>
                       <div className="animal-detail-info">
                         {selectedAnimal.description && <p>{selectedAnimal.description}</p>}
@@ -360,11 +565,31 @@ export default function Navbar() {
             {/* PASO 3: Formulario */}
             {!adopEnviado && selectedAnimal && !showAnimalDetails && (
               <>
-                <button className="back-btn" onClick={() => setSelectedAnimal(null)}>← Volver a los animales</button>
-                <div className="modal-header">
-                  <span className="modal-emoji">❤️</span>
-                  <h2>Adoptar a <em>{selectedAnimal.name}</em></h2>
-                  <p>{selectedAnimal.species}{selectedAnimal.age ? ` · ${selectedAnimal.age} años` : ""}</p>
+                <button className="back-btn" onClick={() => { setSelectedAnimal(null); setSelectedAnimalImages([]); }}>← Volver a los animales</button>
+                <div className="modal-editorial-hero compact">
+                  <div className="modal-editorial-media">
+                    <img
+                      src={currentDetailImage}
+                      alt={selectedAnimal.name}
+                      style={{ display: "block" }}
+                      data-fallback-index="0"
+                      onLoad={handleImageLoad}
+                      onError={(e) => handleImageFallback(e, currentDetailFallbackChain)}
+                    />
+                  </div>
+                  <div className="modal-editorial-copy">
+                    <div className="modal-kicker-row">
+                      <span className="modal-kicker">Solicitud</span>
+                      <span className="modal-kicker muted">Adopta Amigos</span>
+                    </div>
+                    <h2>Adoptar a <em>{selectedAnimal.name}</em></h2>
+                    <p>Completa la solicitud con una presentación más visual, como una ficha destacada de evento.</p>
+                    <div className="modal-typology-row">
+                      <span className="modal-typology-pill">{selectedAnimal.species}</span>
+                      {selectedAnimal.age ? <span className="modal-typology-pill">{selectedAnimal.age} años</span> : null}
+                      <span className="modal-typology-pill accent">Solicitud responsable</span>
+                    </div>
+                  </div>
                 </div>
                 <form onSubmit={handleAdopSubmit} className="modal-form">
                   <input type="text"  placeholder="Tu nombre completo *" required className="modal-input" value={adopForm.nombre}   onChange={(e) => setAdopForm({ ...adopForm, nombre:   e.target.value })} />
@@ -387,10 +612,23 @@ export default function Navbar() {
             {/* PASO 1: Galería de animales */}
             {!adopEnviado && !selectedAnimal && (
               <>
-                <div className="modal-header">
-                  <span className="modal-emoji">🐾</span>
-                  <h2>Adopta Amigos</h2>
-                  <p>Elige el animal que quieres acoger en tu hogar y envía tu solicitud.</p>
+                <div className="modal-editorial-hero">
+                  <div className="modal-editorial-media">
+                    <img src={ADOPTION_MODAL_IMAGE} alt="Animales disponibles para adopción" />
+                  </div>
+                  <div className="modal-editorial-copy">
+                    <div className="modal-kicker-row">
+                      <span className="modal-kicker">Adopta Amigos</span>
+                      <span className="modal-kicker muted">Selección abierta</span>
+                    </div>
+                    <h2>Explora perfiles con foto y tipología</h2>
+                    <p>Elige el animal que quieres acoger en tu hogar en una vista inspirada en Eventos: imagen principal, lectura rápida y fichas mejor jerarquizadas.</p>
+                    <div className="modal-typology-row">
+                      <span className="modal-typology-pill">Perros</span>
+                      <span className="modal-typology-pill">Gatos</span>
+                      <span className="modal-typology-pill">Otros</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="animal-filter-row">
@@ -421,28 +659,60 @@ export default function Navbar() {
                     {filteredAnimales.length === 0 ? (
                       <p className="adopt-empty">No hay animales de este tipo. Prueba con otro filtro.</p>
                     ) : (
-                      <div className="animals-grid">
-                        {filteredAnimales.map((a) => (
+                      <div className="animals-grid event-style-grid">
+                        {filteredAnimales.map((a, index) => {
+                          const preferredIndex = getPreferredImageIndex(a, index);
+                          const previewImage = getFirstAnimalImage(a);
+                          const imageCandidates = getValidAnimalImages(a);
+                          const cardFallbackChain = buildFallbackChain(previewImage, imageCandidates);
+
+                          return (
                           <button
                             key={a.id}
-                            className="animal-card-btn"
-                            onClick={() => { setSelectedAnimal(a); setShowAnimalDetails(true); setSelectedImageIndex(0); setAdopForm(formAdopInicial); }}
+                            className="animal-card-btn event-animal-card"
+                            onClick={() => {
+                              const detailImages = getAnimalDetailImages(a, preferredIndex, 4);
+                              setSelectedAnimal(a);
+                              setSelectedAnimalImages(detailImages);
+                              setShowAnimalDetails(true);
+                              setSelectedImageIndex(0);
+                              setAdopForm(formAdopInicial);
+                            }}
                           >
-                            <div className="animal-card-img">
-                              {a.images?.length > 0 ? (
-                                <img src={a.images[0]} alt={a.name} />
-                              ) : (
-                                <span className="animal-placeholder">{a.species === "Perro" ? "🐶" : a.species === "Gato" ? "🐱" : "🐾"}</span>
-                              )}
+                            <div
+                              className="animal-card-img"
+                              style={{
+                                width: "100%",
+                                height: "120px",
+                                minHeight: "120px",
+                                maxHeight: "120px",
+                                overflow: "hidden",
+                                position: "relative",
+                                display: "block",
+                              }}
+                            >
+                              <img
+                                src={previewImage}
+                                alt={a.name}
+                                style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+                                data-fallback-index="0"
+                                onLoad={handleImageLoad}
+                                onError={(e) => handleImageFallback(e, cardFallbackChain)}
+                              />
                             </div>
                             <div className="animal-card-info">
+                              <div className="animal-card-meta">
+                                <span>{a.species || "Animal"}</span>
+                                <span>{a.age ? `${a.age} años` : "Perfil"}</span>
+                              </div>
                               <strong>{a.name}</strong>
                               <span>{a.species}{a.age ? ` · ${a.age} años` : ""}</span>
                               {a.description && <span className="animal-desc">{a.description}</span>}
                             </div>
                             <span className="animal-adopt-tag">Adoptar →</span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -470,10 +740,41 @@ export default function Navbar() {
                 </div>
             ) : (
               <>
-                <div className="modal-header">
-                  <span className="modal-emoji">💳</span>
-                  <h2>Donar</h2>
-                  <p>Elige el monto y la forma de pago para apoyar a nuestros animales.</p>
+                <div className="modal-editorial-hero">
+                  <div className="modal-editorial-media">
+                    <img src={DONATION_MODAL_IMAGE} alt="Donaciones a la protectora" />
+                  </div>
+                  <div className="modal-editorial-copy">
+                    <div className="modal-kicker-row">
+                      <span className="modal-kicker">Donaciones</span>
+                      <span className="modal-kicker muted">Apoyo activo</span>
+                    </div>
+                    <h2>Haz tu donación</h2>
+                    <p>Elige el monto y la forma de pago para apoyar a la protectora.</p>
+                    <div className="modal-typology-row">
+                      <button
+                        type="button"
+                        className={`modal-typology-pill pill-button ${donationPreset === "puntual" ? "active" : ""}`}
+                        onClick={() => applyDonationPreset("puntual")}
+                      >
+                        {DONATION_PRESETS.puntual.label}
+                      </button>
+                      <button
+                        type="button"
+                        className={`modal-typology-pill pill-button ${donationPreset === "veterinaria" ? "active" : ""}`}
+                        onClick={() => applyDonationPreset("veterinaria")}
+                      >
+                        {DONATION_PRESETS.veterinaria.label}
+                      </button>
+                      <button
+                        type="button"
+                        className={`modal-typology-pill pill-button ${donationPreset === "alimentacion" ? "active" : ""}`}
+                        onClick={() => applyDonationPreset("alimentacion")}
+                      >
+                        {DONATION_PRESETS.alimentacion.label}
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <form onSubmit={handleDonationSubmit} className="modal-form">
                   <input
@@ -484,7 +785,10 @@ export default function Navbar() {
                     required
                     className="modal-input"
                     value={donationForm.cantidad}
-                    onChange={(e) => setDonationForm({ ...donationForm, cantidad: e.target.value })}
+                    onChange={(e) => {
+                      setDonationPreset(null);
+                      setDonationForm({ ...donationForm, cantidad: e.target.value });
+                    }}
                   />
                   <input type="text" placeholder="Nombre completo *" required className="modal-input" value={donationForm.nombre} onChange={(e) => setDonationForm({ ...donationForm, nombre: e.target.value })} />
                   <input type="email" placeholder="Correo electrónico *" required className="modal-input" value={donationForm.email} onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })} />
@@ -562,10 +866,21 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <div className="modal-header">
-                  <span className="modal-emoji">🙋</span>
-                  <h2>Inscríbete como voluntario</h2>
-                  <p>Tu ayuda marca la diferencia. Rellena el formulario y te contactamos.</p>
+                <div className="modal-editorial-hero">
+                  <div className="modal-editorial-media">
+                    <img src={VOLUNTEER_MODAL_IMAGE} alt="Voluntariado con animales" />
+                  </div>
+                  <div className="modal-editorial-copy">
+                    <div className="modal-kicker-row">
+                      <span className="modal-kicker">Voluntariado</span>
+                      <span className="modal-kicker muted">Inscripción abierta</span>
+                    </div>
+                    <h2>Inscríbete con contexto visual</h2>
+                    <p>Tu ayuda marca la diferencia. Mantengo la misma lógica del formulario, pero con entrada tipo Eventos: foto, tipología y jerarquía editorial.</p>
+                    <div className="modal-typology-row">
+                      {DISPONIBILIDADES.slice(0, 4).map((d) => <span key={d} className="modal-typology-pill">{d}</span>)}
+                    </div>
+                  </div>
                 </div>
                 <form onSubmit={handleVolSubmit} className="modal-form">
                   <input type="text"  placeholder="Nombre completo *"      required className="modal-input" value={volForm.nombre}        onChange={(e) => setVolForm({ ...volForm, nombre:        e.target.value })} />

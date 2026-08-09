@@ -41,3 +41,23 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
     res.status(500).json({ error: "Error al obtener datos del dashboard" });
   }
 };
+
+export const getSecurityAuditLogs = async (req: Request, res: Response) => {
+  try {
+    const requestedLimit = Number(req.query.limit || 100);
+    const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 500) : 100;
+
+    const logs = await prisma.securityAuditLog.findMany({
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({
+      items: logs,
+      count: logs.length,
+    });
+  } catch (error) {
+    console.error("Error al obtener logs de seguridad:", error);
+    res.status(500).json({ error: "Error al obtener logs de seguridad" });
+  }
+};

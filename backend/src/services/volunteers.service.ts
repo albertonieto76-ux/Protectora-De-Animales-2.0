@@ -24,3 +24,78 @@ export const deleteExistingVolunteer = async (id: number) => {
     return false;
   }
 };
+
+export const findAllVolunteerAppointments = () =>
+  prisma.citaVoluntariado.findMany({
+    include: {
+      voluntario: {
+        select: {
+          id: true,
+          nombre: true,
+          email: true,
+          telefono: true,
+        },
+      },
+    },
+    orderBy: [{ inicio: "asc" }, { id: "asc" }],
+  });
+
+export const createVolunteerAppointment = (data: {
+  voluntarioId: number;
+  inicio: Date;
+  fin: Date;
+  estado?: string;
+  notas?: string | null;
+}) =>
+  prisma.citaVoluntariado.create({
+    data,
+    include: {
+      voluntario: {
+        select: {
+          id: true,
+          nombre: true,
+          email: true,
+          telefono: true,
+        },
+      },
+    },
+  });
+
+export const updateVolunteerAppointment = async (
+  id: number,
+  data: {
+    voluntarioId: number;
+    inicio: Date;
+    fin: Date;
+    estado?: string;
+    notas?: string | null;
+  }
+) => {
+  try {
+    return await prisma.citaVoluntariado.update({
+      where: { id },
+      data,
+      include: {
+        voluntario: {
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+          },
+        },
+      },
+    });
+  } catch {
+    return null;
+  }
+};
+
+export const deleteVolunteerAppointment = async (id: number) => {
+  try {
+    await prisma.citaVoluntariado.delete({ where: { id } });
+    return true;
+  } catch {
+    return false;
+  }
+};

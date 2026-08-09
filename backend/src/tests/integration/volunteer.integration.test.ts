@@ -80,4 +80,89 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
     expect(res.body).toEqual({ message: "Voluntario eliminado correctamente" });
   });
 
+  it("CRUD /volunteers/appointments gestiona citas de voluntariado", async () => {
+    prismaMock.citaVoluntariado.create.mockResolvedValue({
+      id: 10,
+      voluntarioId: 1,
+      inicio: '2026-08-20T09:00:00.000Z',
+      fin: '2026-08-20T11:00:00.000Z',
+      estado: 'confirmada',
+      notas: 'Apoyo en recepción',
+      voluntario: {
+        id: 1,
+        nombre: 'Ana',
+        email: 'ana@test.com',
+        telefono: '600111222'
+      }
+    });
+
+    prismaMock.citaVoluntariado.findMany.mockResolvedValue([
+      {
+        id: 10,
+        voluntarioId: 1,
+        inicio: '2026-08-20T09:00:00.000Z',
+        fin: '2026-08-20T11:00:00.000Z',
+        estado: 'confirmada',
+        notas: 'Apoyo en recepción',
+        voluntario: {
+          id: 1,
+          nombre: 'Ana',
+          email: 'ana@test.com',
+          telefono: '600111222'
+        }
+      }
+    ]);
+
+    prismaMock.citaVoluntariado.update.mockResolvedValue({
+      id: 10,
+      voluntarioId: 1,
+      inicio: '2026-08-20T10:00:00.000Z',
+      fin: '2026-08-20T12:00:00.000Z',
+      estado: 'pendiente',
+      notas: 'Cambio de horario',
+      voluntario: {
+        id: 1,
+        nombre: 'Ana',
+        email: 'ana@test.com',
+        telefono: '600111222'
+      }
+    });
+
+    prismaMock.citaVoluntariado.delete.mockResolvedValue({});
+
+    const createRes = await request(app)
+      .post('/volunteers/appointments')
+      .send({
+        voluntarioId: 1,
+        inicio: '2026-08-20T09:00:00.000Z',
+        fin: '2026-08-20T11:00:00.000Z',
+        estado: 'confirmada',
+        notas: 'Apoyo en recepción'
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.id).toBe(10);
+
+    const listRes = await request(app).get('/volunteers/appointments');
+    expect(listRes.status).toBe(200);
+    expect(listRes.body).toHaveLength(1);
+
+    const updateRes = await request(app)
+      .put('/volunteers/appointments/10')
+      .send({
+        voluntarioId: 1,
+        inicio: '2026-08-20T10:00:00.000Z',
+        fin: '2026-08-20T12:00:00.000Z',
+        estado: 'pendiente',
+        notas: 'Cambio de horario'
+      });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.estado).toBe('pendiente');
+
+    const deleteRes = await request(app).delete('/volunteers/appointments/10');
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body).toEqual({ message: 'Cita de voluntariado eliminada correctamente' });
+  });
+
 });

@@ -40,6 +40,22 @@ model Voluntario {
   disponibilidad String?
   mensaje        String?
   createdAt      DateTime @default(now())
+  citas          CitaVoluntariado[]
+}
+
+model CitaVoluntariado {
+  id           Int        @id @default(autoincrement())
+  voluntarioId Int
+  inicio       DateTime
+  fin          DateTime
+  estado       String     @default("confirmada")
+  notas        String?
+  createdAt    DateTime   @default(now())
+
+  voluntario Voluntario @relation(fields: [voluntarioId], references: [id], onDelete: Cascade)
+
+  @@index([inicio])
+  @@index([voluntarioId, inicio])
 }
 
 model Evento {
@@ -48,6 +64,7 @@ model Evento {
   descripcion String?
   fecha       DateTime
   lugar       String?
+  images      String[] @default([])
   createdAt   DateTime @default(now())
 }
 
@@ -70,9 +87,32 @@ model TipoPago {
 }
 
 model Usuario {
-  id        Int     @id @default(autoincrement())
-  nombre    String
-  email     String  @unique
-  password  String
-  role      String  @default("user") // "admin" o "user"
+  id            Int     @id @default(autoincrement())
+  nombre        String
+  email         String  @unique
+  password      String
+  role          String  @default("user") // "admin" o "user"
+  mfaEnabled    Boolean @default(false)
+  mfaSecret     String?
+  mfaTempSecret String?
+  mfaRecoveryCodes String[] @default([])
+}
+
+model SecurityAuditLog {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int?
+  email     String?
+  action    String
+  success   Boolean
+  ip        String?
+  userAgent String?
+  path      String?
+  method    String?
+  reason    String?
+  metadata  Json?
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([userId])
 }

@@ -5,15 +5,15 @@ async function main() {
   const email = process.env.ADMIN_EMAIL || "admin@protectora.com";
   const password = process.env.ADMIN_PASSWORD || "Admin123!";
 
-  const existing = await prisma.usuario.findUnique({ where: { email } });
-  if (existing) {
-    console.log("Usuario administrador ya existe");
-    return;
-  }
-
   const hashedPassword = await bcrypt.hash(password, 12);
-  await prisma.usuario.create({
-    data: {
+  await prisma.usuario.upsert({
+    where: { email },
+    update: {
+      nombre: "Administrador",
+      password: hashedPassword,
+      role: "admin",
+    },
+    create: {
       nombre: "Administrador",
       email,
       password: hashedPassword,
@@ -21,7 +21,7 @@ async function main() {
     },
   });
 
-  console.log(`Usuario administrador creado: ${email}`);
+  console.log(`Usuario administrador listo: ${email}`);
 }
 
 main().catch((err) => {

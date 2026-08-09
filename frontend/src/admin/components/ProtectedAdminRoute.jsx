@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
+const AUTH_API_BASE = import.meta.env.VITE_API_URL || "/api";
+
 export function ProtectedAdminRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
     let mounted = true;
 
-    fetch("http://localhost:4000/api/auth/me", {
+    fetch(`${AUTH_API_BASE}/auth/me`, {
       credentials: "include",
       method: "GET",
     })
