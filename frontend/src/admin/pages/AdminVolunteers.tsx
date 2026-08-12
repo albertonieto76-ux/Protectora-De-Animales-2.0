@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AdminLayout } from "../layout/AdminLayout";
 import { AdminStateNotice } from "../components/AdminStateNotice";
+import { VOLUNTEER_UPDATE_EVENT } from "../../utils/volunteerSignals";
 import {
   createVolunteerAppointment,
   deleteVolunteerAppointment,
@@ -28,6 +29,8 @@ const STATUS_OPTIONS = [
   { value: "pendiente", label: "Pendiente" },
   { value: "cancelada", label: "Cancelada" },
 ];
+
+const STATUS_FILTER_OPTIONS = [{ value: "all", label: "Todos" }, ...STATUS_OPTIONS];
 
 const pad = (value: number) => value.toString().padStart(2, "0");
 
@@ -70,7 +73,8 @@ const buildCalendarDays = (monthCursor: Date) => {
 
 const buildInitialForm = (volunteerId: number | null, date: Date) => ({
   voluntarioId: volunteerId ? String(volunteerId) : "",
-  fecha: toDateInputValue(date),
+  fechaInicio: toDateInputValue(date),
+  fechaFin: toDateInputValue(date),
   horaInicio: "09:00",
   horaFin: "11:00",
   estado: "confirmada",
@@ -88,6 +92,7 @@ export const AdminVolunteers = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [monthCursor, setMonthCursor] = useState(getMonthStart(new Date()));
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingAppointment, setIsDeletingAppointment] = useState(false);
@@ -123,6 +128,27 @@ export const AdminVolunteers = () => {
   useEffect(() => {
     loadVoluntarios();
     loadAppointments();
+  }, []);
+
+  useEffect(() => {
+    const handleVolunteerUpdated = () => {
+      loadVoluntarios();
+      loadAppointments();
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (event.key !== VOLUNTEER_UPDATE_EVENT) return;
+      loadVoluntarios();
+      loadAppointments();
+    };
+
+    window.addEventListener(VOLUNTEER_UPDATE_EVENT, handleVolunteerUpdated as EventListener);
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener(VOLUNTEER_UPDATE_EVENT, handleVolunteerUpdated as EventListener);
+      window.removeEventListener("storage", handleStorageUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -169,11 +195,24 @@ export const AdminVolunteers = () => {
 
   const selectedAppointment = appointments.find((item) => item.id === selectedAppointmentId) || null;
   const calendarDays = buildCalendarDays(monthCursor);
+  const selectedRangeStart = selectedAppointment ? new Date(selectedAppointment.inicio) : null;
+  const selectedRangeEnd = selectedAppointment ? new Date(selectedAppointment.fin) : null;
   const selectedDateKey = toDateKey(selectedDate);
   const selectedDateAppointments = sortAppointmentsByStart(
-    appointments.filter((item) => toDateKey(item.inicio) === selectedDateKey),
+    appointments.filter((item) => {
+      const start = new Date(item.inicio);
+      const end = new Date(item.fin);
+      const selected = new Date(`${selectedDateKey}T12:00:00`);
+      return selected >= start && selected <= end;
+    }),
   );
   const appointmentForActions = selectedAppointment || selectedDateAppointments[0] || null;
+  const filteredAppointments = sortAppointmentsByStart(
+    appointments.filter((item) => {
+      const status = (item.estado || "pendiente").toLowerCase();
+      return selectedStatus === "all" || status === selectedStatus;
+    }),
+  );
 
   const startCreateFlow = (date = selectedDate) => {
     setSelectedDate(date);
@@ -191,7 +230,8 @@ export const AdminVolunteers = () => {
     setFormMode("edit");
     setFormData({
       voluntarioId: String(appointment.voluntarioId),
-      fecha: toDateInputValue(appointment.inicio),
+      fechaInicio: toDateInputValue(appointment.inicio),
+      fechaFin: toDateInputValue(appointment.fin),
       horaInicio: toTimeInputValue(appointment.inicio),
       horaFin: toTimeInputValue(appointment.fin),
       estado: appointment.estado || "confirmada",
@@ -218,7 +258,10 @@ export const AdminVolunteers = () => {
     setFormMode("create");
     setFormData((current) => ({
       ...current,
-      fecha: toDateInputValue(date),
+      fechaInicio: toDateInputValue(date),
+      fechaFin: toDateInputValue(date),
+      horaInicio: current.horaInicio || "09:00",
+      horaFin: current.horaFin || "11:00",
     }));
   };
 
@@ -229,8 +272,8 @@ export const AdminVolunteers = () => {
     try {
       const payload = {
         voluntarioId: Number(formData.voluntarioId),
-        inicio: combineDateTime(formData.fecha, formData.horaInicio),
-        fin: combineDateTime(formData.fecha, formData.horaFin),
+        inicio: `${formData.fechaInicio}T${formData.horaInicio}:00`,
+        fin: `${formData.fechaFin}T${formData.horaFin}:00`,
         estado: formData.estado,
         notas: formData.notas,
       };
@@ -260,8 +303,8 @@ export const AdminVolunteers = () => {
         refreshedAppointments.filter(
           (item) =>
             Number(item.voluntarioId) === Number(payload.voluntarioId)
-            && toDateInputValue(item.inicio) === formData.fecha
-            && toTimeInputValue(item.inicio) === formData.horaInicio,
+            && toDateInputValue(item.inicio) === formData.fechaInicio
+            && toDateInputValue(item.fin) === formData.fechaFin,
         ),
       )[0];
 
@@ -317,7 +360,7 @@ export const AdminVolunteers = () => {
         <div className="admin-header">
           <h1 className="admin-title">🙋 Gestión de Voluntarios</h1>
           <button className="admin-btn-primary" onClick={() => startCreateFlow(selectedDate)}>
-            + Alta de cita
+            + Alta de prestación
           </button>
         </div>
 
@@ -367,7 +410,28 @@ export const AdminVolunteers = () => {
                 {calendarDays.map((day) => {
                   const confirmedCount = confirmedCountByDay[day.key] || 0;
                   const isSelected = day.key === selectedDateKey;
-                  const dayAppointments = appointments.filter((item) => toDateKey(item.inicio) === day.key);
+                  const currentDay = new Date(`${day.key}T12:00:00`);
+                  const dayAppointments = appointments.filter((item) => {
+                    const start = new Date(item.inicio);
+                    const end = new Date(item.fin);
+                    return currentDay >= start && currentDay <= end;
+                  });
+                  const hasPendingDayAppointment = dayAppointments.some((item) => (item.estado || "confirmada").toLowerCase() === "pendiente");
+                  const hasCancelledDayAppointment = dayAppointments.some((item) => (item.estado || "confirmada").toLowerCase() === "cancelada");
+                  const isInSelectedRange = selectedRangeStart && selectedRangeEnd
+                    ? currentDay >= selectedRangeStart && currentDay <= selectedRangeEnd
+                    : false;
+                  const selectedAppointmentStatus = (selectedAppointment?.estado || "confirmada").toLowerCase();
+                  const rangeStatusClass = isInSelectedRange
+                    ? selectedAppointmentStatus === "cancelada"
+                      ? "calendar-day-selected-range-cancelled"
+                      : selectedAppointmentStatus === "pendiente"
+                        ? "calendar-day-selected-range-pending"
+                        : "calendar-day-selected-range"
+                    : "";
+                  const rangeHoursLabel = selectedAppointment && isInSelectedRange
+                    ? `${TIME_LABEL.format(new Date(selectedAppointment.inicio))} → ${TIME_LABEL.format(new Date(selectedAppointment.fin))}`
+                    : null;
 
                   return (
                     <button
@@ -377,7 +441,10 @@ export const AdminVolunteers = () => {
                         "calendar-day-cell",
                         day.isCurrentMonth ? "" : "calendar-day-outside",
                         confirmedCount > 0 ? "calendar-day-confirmed" : "",
+                        hasPendingDayAppointment ? "calendar-day-pending" : "",
+                        hasCancelledDayAppointment ? "calendar-day-cancelled" : "",
                         isSelected ? "calendar-day-selected" : "",
+                        rangeStatusClass,
                       ].join(" ").trim()}
                       onClick={() => handleDateSelection(day.date)}
                     >
@@ -386,7 +453,12 @@ export const AdminVolunteers = () => {
                         {confirmedCount > 0 ? `${confirmedCount} confirmada${confirmedCount > 1 ? "s" : ""}` : "Sin confirmar"}
                       </span>
                       {dayAppointments.length > 0 && (
-                        <span className="calendar-day-total">{dayAppointments.length} cita{dayAppointments.length > 1 ? "s" : ""}</span>
+                        <span className="calendar-day-total">{dayAppointments.length} prestación{dayAppointments.length > 1 ? "es" : ""}</span>
+                      )}
+                      {rangeHoursLabel && (
+                        <span className="calendar-day-meta" style={{ fontSize: "0.72rem", marginTop: "0.25rem" }}>
+                          {rangeHoursLabel}
+                        </span>
                       )}
                     </button>
                   );
@@ -410,7 +482,7 @@ export const AdminVolunteers = () => {
                     disabled={!appointmentForActions}
                     onClick={() => appointmentForActions && openAppointment(appointmentForActions)}
                   >
-                    Modificar
+                    Modificar voluntariado
                   </button>
                   <button
                     type="button"
@@ -432,17 +504,17 @@ export const AdminVolunteers = () => {
                       className={`daily-appointment-chip ${selectedAppointmentId === item.id ? "active" : ""}`}
                       onClick={() => openAppointment(item)}
                     >
-                      <span>{TIME_LABEL.format(new Date(item.inicio))} - {TIME_LABEL.format(new Date(item.fin))}</span>
+                      <span>{DATE_LABEL.format(new Date(item.inicio))} · {TIME_LABEL.format(new Date(item.inicio))} → {TIME_LABEL.format(new Date(item.fin))}</span>
                       <strong>{item.voluntario?.nombre || `Voluntario #${item.voluntarioId}`}</strong>
                     </button>
                   ))}
                 </div>
               ) : (
-                <AdminStateNotice message="No hay citas cargadas para este día." variant="empty" compact />
+                <AdminStateNotice message="No hay prestaciones cargadas para este día." variant="empty" compact />
               )}
 
               <form className="form-card volunteer-appointment-form" onSubmit={handleFormSubmit}>
-                <h3>{formMode === "edit" ? "Modificar cita" : "Alta de nueva cita"}</h3>
+                <h3>{formMode === "edit" ? "Modificar voluntariado" : "Alta de nuevo voluntariado"}</h3>
                 <div className="form-grid">
                   <div className="form-group">
                     <label>Voluntario</label>
@@ -461,15 +533,25 @@ export const AdminVolunteers = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Fecha</label>
+                    <label>Fecha de inicio de prestación</label>
                     <input
                       type="date"
                       required
-                      value={formData.fecha}
+                      value={formData.fechaInicio}
                       onChange={(e) => {
-                        setFormData({ ...formData, fecha: e.target.value });
+                        setFormData({ ...formData, fechaInicio: e.target.value });
                         setSelectedDate(new Date(`${e.target.value}T12:00:00`));
                       }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Fecha de fin de prestación</label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.fechaFin}
+                      onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
                     />
                   </div>
 
@@ -519,7 +601,7 @@ export const AdminVolunteers = () => {
                 </div>
 
                 <button type="submit" className="admin-btn-primary" disabled={isSaving || !voluntarios.length}>
-                  {isSaving ? "Guardando..." : formMode === "edit" ? "Guardar cambios" : "Crear cita"}
+                  {isSaving ? "Guardando..." : formMode === "edit" ? "Guardar cambios" : "Crear prestación"}
                 </button>
               </form>
             </div>
@@ -529,16 +611,33 @@ export const AdminVolunteers = () => {
             <div className="list-panel-header">
               <div>
                 <p className="calendar-overline">Listado lateral</p>
-                <h2 className="calendar-title">Todas las citas</h2>
+                <h2 className="calendar-title">Todas las prestaciones</h2>
               </div>
-              <span className="list-counter">{appointments.length}</span>
+              <span className="list-counter">{filteredAppointments.length}</span>
             </div>
 
-            {appointments.length === 0 ? (
-              <AdminStateNotice message="No hay citas de voluntariado registradas." variant="empty" />
+            <div className="form-group" style={{ marginBottom: "0.75rem" }}>
+              <label>Filtrar por estado</label>
+              <div className="editor-action-group" style={{ justifyContent: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
+                {STATUS_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`admin-btn-secondary ${selectedStatus === option.value ? "active" : ""}`}
+                    onClick={() => setSelectedStatus(option.value)}
+                    style={{ minWidth: "auto" }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {filteredAppointments.length === 0 ? (
+              <AdminStateNotice message="No hay prestaciones de voluntariado con este estado." variant="empty" />
             ) : (
               <div className="appointment-list-scroll">
-                {appointments.map((item) => (
+                {filteredAppointments.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -547,10 +646,11 @@ export const AdminVolunteers = () => {
                   >
                     <div className="appointment-list-main">
                       <strong>{item.voluntario?.nombre || `Voluntario #${item.voluntarioId}`}</strong>
-                      <span>{DATE_LABEL.format(new Date(item.inicio))}</span>
+                      <span>
+                        {DATE_LABEL.format(new Date(item.inicio))} {TIME_LABEL.format(new Date(item.inicio))} → {DATE_LABEL.format(new Date(item.fin))} {TIME_LABEL.format(new Date(item.fin))}
+                      </span>
                     </div>
-                    <div className="appointment-list-meta">
-                      <span>{TIME_LABEL.format(new Date(item.inicio))} - {TIME_LABEL.format(new Date(item.fin))}</span>
+                    <div className="appointment-list-meta" style={{ alignItems: "flex-end" }}>
                       <span className={`badge badge-${item.estado || "pendiente"}`}>{item.estado || "pendiente"}</span>
                     </div>
                     {item.notas ? <p>{item.notas}</p> : null}

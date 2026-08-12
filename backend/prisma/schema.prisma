@@ -66,16 +66,34 @@ model Evento {
   lugar       String?
   images      String[] @default([])
   createdAt   DateTime @default(now())
+
+  asistentes AsistenteEvento[]
+}
+
+model AsistenteEvento {
+  id        Int      @id @default(autoincrement())
+  eventoId  Int
+  nombre    String
+  email     String
+  telefono  String?
+  mensaje   String?
+  createdAt DateTime @default(now())
+
+  evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  @@index([eventoId])
+  @@index([email])
 }
 
 model Donacion {
-  id        Int       @id @default(autoincrement())
-  cantidad  Float
-  nombre    String?
-  email     String?
-  metodoId  Int?
-  metodo    TipoPago? @relation(fields: [metodoId], references: [id])
-  createdAt DateTime @default(now())
+  id            Int       @id @default(autoincrement())
+  cantidad      Float
+  nombre        String?
+  email         String?
+  metodoId      Int?
+  metodo        TipoPago? @relation(fields: [metodoId], references: [id])
+  tipoDonacion  String?
+  createdAt     DateTime @default(now())
 }
 
 model TipoPago {

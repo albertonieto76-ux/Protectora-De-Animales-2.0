@@ -4,6 +4,8 @@ import type { CorsOptions } from "cors";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const CSRF_EXEMPT_PATHS = new Set(["/api/auth/login"]);
 
+const isEventAssistantRoute = (path: string) => /\/api\/events\/[0-9]+\/assist$/.test(path);
+
 export const getCorsOptions = (): CorsOptions => {
   const raw = process.env.CORS_ORIGINS || "http://localhost:5173";
   const allowed = raw
@@ -51,7 +53,7 @@ export const enforceCsrfForCookieAuth = (req: Request, res: Response, next: Next
     return;
   }
 
-  if (CSRF_EXEMPT_PATHS.has(req.path)) {
+  if (CSRF_EXEMPT_PATHS.has(req.path) || isEventAssistantRoute(req.path)) {
     next();
     return;
   }

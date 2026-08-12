@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 
 export const prismaMock = {
+  $transaction: vi.fn(async (callback: any) => callback(prismaMock)),
   animal: {
     count: vi.fn(),
     findMany: vi.fn(),

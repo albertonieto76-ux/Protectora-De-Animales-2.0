@@ -1,5 +1,7 @@
 import { useVoluntarios } from "../hooks/useVoluntarios";
 import { useState } from "react";
+import { VolunteerAvailabilitySelector } from "../components/VolunteerAvailabilitySelector";
+import { broadcastVolunteerUpdated } from "../utils/volunteerSignals";
 import "./EventosPage.css";
 import "./PublicIndexVisual.css";
 
@@ -22,6 +24,7 @@ export default function VoluntariosPage() {
         setEnviando(true);
         try {
             await crear(form);
+            broadcastVolunteerUpdated({ source: "public-volunteer-form" });
             setEnviado(true);
             setForm({ nombre: "", email: "", telefono: "", disponibilidad: "" });
             setTimeout(() => {
@@ -159,15 +162,13 @@ export default function VoluntariosPage() {
                                         />
                                     ))}
 
-                                    <select
+                                    <label className="public-muted" style={{ marginTop: "0.4rem", display: "block" }}>
+                                        Selecciona tu disponibilidad
+                                    </label>
+                                    <VolunteerAvailabilitySelector
                                         value={form.disponibilidad}
-                                        onChange={(e) => setForm({ ...form, disponibilidad: e.target.value })}
-                                    >
-                                        <option value="" disabled>Disponibilidad horaria</option>
-                                        {DISPONIBILIDADES.map(d => (
-                                            <option key={d} value={d}>{d}</option>
-                                        ))}
-                                    </select>
+                                        onChange={(value) => setForm({ ...form, disponibilidad: value })}
+                                    />
 
                                     <button
                                         type="submit"

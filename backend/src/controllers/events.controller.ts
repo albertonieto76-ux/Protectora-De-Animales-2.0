@@ -4,6 +4,8 @@ import {
   deleteExistingEvent,
   findAllEvents,
   findEventById,
+  getEventAssistants as getEventAssistantsService,
+  registerAssistantToEvent,
   updateExistingEvent,
 } from "../services/events.service.js";
 import { filesToDataUrls } from "../utils/imageDataUrl.js";
@@ -22,10 +24,18 @@ const normalizeEventPayload = (req: Request) => {
     : undefined;
   const uploadedImages = getImagesFromRequest(req);
 
-  return {
-    ...body,
+  const payload: Record<string, any> = {
+    titulo: body.titulo,
+    descripcion: body.descripcion,
+    lugar: body.lugar,
     images: uploadedImages.length > 0 ? uploadedImages : imagesFromBody,
   };
+
+  if (body.fecha) {
+    payload.fecha = new Date(body.fecha);
+  }
+
+  return payload;
 };
 
 export const getEvents = async (_req: Request, res: Response) => {
@@ -35,6 +45,21 @@ export const getEvents = async (_req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener eventos" });
+  }
+};
+
+export const getAssistantsForEvent = async (req: Request, res: Response) => {
+  try {
+    const eventoId = Number(req.params.id);
+    if (!Number.isInteger(eventoId) || eventoId <= 0) {
+      return res.status(400).json({ error: "ID de evento inválido" });
+    }
+
+    const assistants = await getEventAssistantsService(eventoId);
+    res.json(assistants);
+  } catch (error) {
+    console.error(error);
+    res.status(200).json([]);
   }
 };
 
@@ -79,6 +104,44 @@ export const updateEvent = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al actualizar evento" });
+  }
+};
+
+export const registerEventAssistant = async (req: Request, res: Response) => {
+  try {
+    const eventoId = Number(req.params.id);
+    const body = req.body as Record<string, any>;
+
+    if (!Number.isInteger(eventoId) || eventoId <= 0) {
+      return res.status(400).json({ error: "ID de evento inválido" });
+    }
+
+    const assistant = await registerAssistantToEvent(eventoId, {
+      nombre: body.nombre,
+      email: body.email,
+      telefono: body.telefono,
+      mensaje: body.mensaje,
+    });
+
+    res.status(201).json(assistant);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al apuntarse al evento" });
+  }
+};
+
+export const getEventAssistants = async (req: Request, res: Response) => {
+  try {
+    const eventoId = Number(req.params.id);
+    if (!Number.isInteger(eventoId) || eventoId <= 0) {
+      return res.status(400).json({ error: "ID de evento inválido" });
+    }
+
+    const assistants = await getEventAssistantsService(eventoId);
+    res.json(assistants);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener asistentes del evento" });
   }
 };
 

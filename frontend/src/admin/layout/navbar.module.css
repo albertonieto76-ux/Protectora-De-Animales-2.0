@@ -27,45 +27,43 @@
 .right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0;
 }
 
-.themeBtn,
 .logoutBtn {
-  background: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  padding: 0.35rem 0.5rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border: 1px solid #b6d0ee;
+  background: linear-gradient(180deg, #f6fbff 0%, #e9f2fc 100%);
+  color: #4d94d8;
+  display: grid;
+  place-items: center;
+  padding: 0;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-size: 0.95rem;
-  color: #334155;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, color 0.2s ease;
   outline: none;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 20px rgba(77, 148, 216, 0.22);
   -webkit-appearance: none;
   appearance: none;
-  text-decoration: none;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
-.themeBtn:focus,
 .logoutBtn:focus,
-.themeBtn:focus-visible,
 .logoutBtn:focus-visible,
-.themeBtn:active,
 .logoutBtn:active {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
-  text-decoration: none !important;
-  background: transparent !important;
+  outline: none;
 }
 
-.themeBtn:hover,
 .logoutBtn:hover {
-  border-color: #94a3b8;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+  border-color: #7eaee2;
+  color: #2f7ec9;
+  box-shadow: 0 14px 26px rgba(47, 126, 201, 0.26);
+  transform: translateY(-1px);
+}
+
+.logoutBtn svg {
+  width: 40px;
+  height: 40px;
 }
 
 .left {
@@ -77,12 +75,9 @@
 .right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0;
 }
 
 .logoutBtn {
-  font-weight: 600;
-  padding: 0.35rem 0.8rem;
   margin-left: auto;
-  font-family: "Space Grotesk", "Manrope", sans-serif;
 }

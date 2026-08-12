@@ -12,8 +12,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
 const JWT_EXPIRES_IN = "8h";
 const JWT_ISSUER = "protectora-backend";
 const JWT_AUDIENCE = "protectora-admin";
-const MFA_PENDING_COOKIE = "admin_mfa_pending";
-const MFA_PENDING_EXPIRES_IN = "5m";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,12 +35,16 @@ const csrfCookieOptions = {
   path: "/",
 };
 
-const mfaPendingCookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: (isProduction ? "strict" : "lax") as "strict" | "lax",
-  maxAge: 5 * 60 * 1000,
-  path: "/",
+const clearAdminCookies = (res: Response) => {
+  const clearOptions = [
+    { path: "/" },
+    { path: "/api" },
+  ];
+
+  for (const options of clearOptions) {
+    res.clearCookie("admin_token", options);
+    res.clearCookie("csrf_token", options);
+  }
 };
 
 const signAdminToken = (user: { id: number; role: string; email: string }) => {
@@ -60,37 +62,8 @@ const issueAdminSession = (res: Response, user: { id: number; role: string; emai
 
   res.cookie("admin_token", token, cookieOptions);
   res.cookie("csrf_token", csrfToken, csrfCookieOptions);
-  res.clearCookie(MFA_PENDING_COOKIE, { path: "/" });
 
   return csrfToken;
-};
-
-const signPendingMfaToken = (userId: number) => {
-  return jwt.sign({ sub: userId, type: "mfa_pending" }, JWT_SECRET, {
-    expiresIn: MFA_PENDING_EXPIRES_IN,
-    issuer: JWT_ISSUER,
-    audience: JWT_AUDIENCE,
-    algorithm: "HS256",
-  });
-};
-
-const generateRecoveryCode = () => crypto.randomBytes(5).toString("hex").toUpperCase();
-
-const createRecoveryCodes = async (count = 8) => {
-  const plainCodes = Array.from({ length: count }, () => generateRecoveryCode());
-  const hashedCodes = await Promise.all(plainCodes.map((code) => bcrypt.hash(code, 12)));
-  return { plainCodes, hashedCodes };
-};
-
-const consumeRecoveryCode = async (hashedCodes: string[], candidateCode: string) => {
-  const normalizedCode = String(candidateCode || "").trim().toUpperCase();
-  for (let index = 0; index < hashedCodes.length; index += 1) {
-    const matches = await bcrypt.compare(normalizedCode, hashedCodes[index]);
-    if (matches) {
-      return hashedCodes.filter((_, currentIndex) => currentIndex !== index);
-    }
-  }
-  return null;
 };
 
 export const loginAdmin = async (req: Request, res: Response) => {
@@ -137,26 +110,6 @@ export const loginAdmin = async (req: Request, res: Response) => {
     }
 
     clearLoginFailures(rateLimitKey);
-    if (user.mfaEnabled && user.mfaSecret) {
-      const pendingToken = signPendingMfaToken(user.id);
-      res.cookie(MFA_PENDING_COOKIE, pendingToken, mfaPendingCookieOptions);
-      res.clearCookie("admin_token", { path: "/" });
-      res.clearCookie("csrf_token", { path: "/" });
-
-      await auditLog({
-        action: "ADMIN_LOGIN_MFA_REQUIRED",
-        success: true,
-        userId: user.id,
-        email: user.email,
-        path: req.originalUrl,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.header("user-agent") || null,
-      });
-
-      return res.json({ ok: true, mfaRequired: true, message: "Verificación MFA requerida" });
-    }
-
     const csrfToken = issueAdminSession(res, { id: user.id, role: user.role, email: user.email });
     await auditLog({
       action: "ADMIN_LOGIN_SUCCESS",
@@ -177,145 +130,34 @@ export const loginAdmin = async (req: Request, res: Response) => {
   }
 };
 
-export const verifyAdminMfa = async (req: Request, res: Response) => {
-  const pendingToken = req.cookies?.[MFA_PENDING_COOKIE];
-  const { code, recoveryCode } = req.body as { code?: string; recoveryCode?: string };
-
-  if (!pendingToken || (!code && !recoveryCode)) {
-    await auditFromRequest(req, { action: "ADMIN_MFA_VERIFY_FAILED", success: false, reason: "missing_pending_or_code" });
-    return res.status(400).json({ error: "Código MFA obligatorio" });
-  }
-
-  try {
-    const payload = jwt.verify(pendingToken, JWT_SECRET, {
-      algorithms: ["HS256"],
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-    }) as { sub?: number | string; type?: string };
-
-    if (payload.type !== "mfa_pending" || !payload.sub) {
-      await auditFromRequest(req, { action: "ADMIN_MFA_VERIFY_FAILED", success: false, reason: "invalid_pending_token" });
-      return res.status(401).json({ error: "Sesión MFA inválida" });
-    }
-
-    const userId = Number(payload.sub);
-    const user = await prisma.usuario.findUnique({ where: { id: userId } });
-    if (!user || !user.mfaEnabled || !user.mfaSecret) {
-      await auditFromRequest(req, { action: "ADMIN_MFA_VERIFY_FAILED", success: false, reason: "mfa_not_configured" });
-      return res.status(401).json({ error: "MFA no configurado" });
-    }
-
-    const secret = decryptSecret(user.mfaSecret);
-    const validTotp = code ? verifyTotp(secret, code) : false;
-    const remainingRecoveryCodes = recoveryCode
-      ? await consumeRecoveryCode(user.mfaRecoveryCodes || [], recoveryCode)
-      : null;
-
-    if (!validTotp && !remainingRecoveryCodes) {
-      await auditLog({
-        action: "ADMIN_MFA_VERIFY_FAILED",
-        success: false,
-        reason: recoveryCode ? "invalid_recovery_code" : "invalid_totp",
-        userId: user.id,
-        email: user.email,
-        path: req.originalUrl,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.header("user-agent") || null,
-      });
-      return res.status(401).json({ error: "Código MFA inválido" });
-    }
-
-    if (remainingRecoveryCodes) {
-      await prisma.usuario.update({
-        where: { id: user.id },
-        data: { mfaRecoveryCodes: remainingRecoveryCodes },
-      });
-    }
-
-    const csrfToken = issueAdminSession(res, { id: user.id, role: user.role, email: user.email });
-    await auditLog({
-      action: "ADMIN_MFA_VERIFY_SUCCESS",
-      success: true,
-      userId: user.id,
-      email: user.email,
-      path: req.originalUrl,
-      method: req.method,
-      ip: req.ip,
-      userAgent: req.header("user-agent") || null,
-    });
-    return res.json({
-      ok: true,
-      message: remainingRecoveryCodes ? "Recovery code aceptado" : "MFA verificado",
-      csrfToken,
-      recoveryCodesRemaining: remainingRecoveryCodes ? remainingRecoveryCodes.length : (user.mfaRecoveryCodes || []).length,
-    });
-  } catch {
-    await auditFromRequest(req, { action: "ADMIN_MFA_VERIFY_FAILED", success: false, reason: "token_verification_error" });
-    return res.status(401).json({ error: "Sesión MFA expirada" });
-  }
-};
-
 export const logoutAdmin = (_req: Request, res: Response) => {
-  res.clearCookie("admin_token", { path: "/" });
-  res.clearCookie("csrf_token", { path: "/" });
-  res.clearCookie(MFA_PENDING_COOKIE, { path: "/" });
+  clearAdminCookies(res);
   auditFromRequest(_req, { action: "ADMIN_LOGOUT", success: true }).catch(() => undefined);
   return res.json({ ok: true, message: "Sesión cerrada" });
 };
 
-export const meAdmin = (req: Request, res: Response) => {
-  const token = req.cookies?.admin_token || req.headers.authorization?.replace(/^Bearer\s+/i, "");
+const generateRecoveryCode = () => crypto.randomBytes(5).toString("hex").toUpperCase();
 
-  if (!token) {
-    return res.status(401).json({ error: "No autenticado" });
-  }
+const createRecoveryCodes = async (count = 8) => {
+  const plainCodes = Array.from({ length: count }, () => generateRecoveryCode());
+  const hashedCodes = await Promise.all(plainCodes.map((code) => bcrypt.hash(code, 12)));
+  return { plainCodes, hashedCodes };
+};
 
-  try {
-    const payload = jwt.verify(token, JWT_SECRET, {
-      algorithms: ["HS256"],
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-    }) as { sub?: number | string; role?: string; email?: string };
-    if (payload.role !== "admin") {
-      return res.status(403).json({ error: "Permisos insuficientes" });
+const consumeRecoveryCode = async (hashedCodes: string[], candidateCode: string) => {
+  const normalizedCode = String(candidateCode || "").trim().toUpperCase();
+  for (let index = 0; index < hashedCodes.length; index += 1) {
+    const matches = await bcrypt.compare(normalizedCode, hashedCodes[index]);
+    if (matches) {
+      return hashedCodes.filter((_, currentIndex) => currentIndex !== index);
     }
-    const userId = Number(payload.sub);
-    const sendPayload = (extra: Record<string, unknown> = {}) => res.json({
-      ok: true,
-      role: payload.role,
-      email: payload.email,
-      ...extra,
-    });
-
-    prisma.usuario.findUnique({ where: { id: userId } })
-      .then((user) => {
-        const extra = {
-          mfaEnabled: Boolean(user?.mfaEnabled),
-          recoveryCodesRemaining: user?.mfaRecoveryCodes?.length || 0,
-        };
-
-        if (!req.cookies?.csrf_token) {
-          const csrfToken = createCsrfToken();
-          res.cookie("csrf_token", csrfToken, csrfCookieOptions);
-          sendPayload({ csrfToken, ...extra });
-          return;
-        }
-
-        sendPayload(extra);
-      })
-      .catch(() => {
-        if (!req.cookies?.csrf_token) {
-          const csrfToken = createCsrfToken();
-          res.cookie("csrf_token", csrfToken, csrfCookieOptions);
-          return res.json({ ok: true, role: payload.role, csrfToken, mfaEnabled: false, recoveryCodesRemaining: 0 });
-        }
-        return res.json({ ok: true, role: payload.role, mfaEnabled: false, recoveryCodesRemaining: 0 });
-      });
-    return;
-  } catch {
-    return res.status(401).json({ error: "Sesión inválida" });
   }
+  return null;
+};
+
+export const verifyAdminMfa = async (req: Request, res: Response) => {
+  await auditFromRequest(req, { action: "ADMIN_MFA_VERIFY_DEPRECATED", success: false, reason: "mfa_flow_disabled" });
+  return res.status(410).json({ error: "La verificación MFA ya no se usa en el login" });
 };
 
 export const setupAdminMfa = async (req: Request, res: Response) => {
@@ -334,11 +176,7 @@ export const setupAdminMfa = async (req: Request, res: Response) => {
   await prisma.usuario.update({ where: { id: userId }, data: { mfaTempSecret: encrypted } });
 
   await auditFromRequest(req, { action: "ADMIN_MFA_SETUP", success: true });
-  return res.json({
-    ok: true,
-    secret,
-    otpauthUrl: buildOtpAuthUrl(secret, user.email),
-  });
+  return res.json({ ok: true, secret, otpauthUrl: buildOtpAuthUrl(secret, user.email) });
 };
 
 export const enableAdminMfa = async (req: Request, res: Response) => {
@@ -361,7 +199,6 @@ export const enableAdminMfa = async (req: Request, res: Response) => {
   }
 
   const { plainCodes, hashedCodes } = await createRecoveryCodes();
-
   await prisma.usuario.update({
     where: { id: userId },
     data: {
@@ -426,3 +263,52 @@ export const regenerateAdminRecoveryCodes = async (req: Request, res: Response) 
   await auditFromRequest(req, { action: "ADMIN_MFA_RECOVERY_REGENERATE", success: true });
   return res.json({ ok: true, recoveryCodes: plainCodes });
 };
+
+export const meAdmin = (req: Request, res: Response) => {
+  const token = req.cookies?.admin_token || req.headers.authorization?.replace(/^Bearer\s+/i, "");
+
+  if (!token) {
+    return res.status(401).json({ error: "No autenticado" });
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET, {
+      algorithms: ["HS256"],
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    }) as { sub?: number | string; role?: string; email?: string };
+    if (payload.role !== "admin") {
+      return res.status(403).json({ error: "Permisos insuficientes" });
+    }
+    const userId = Number(payload.sub);
+    const sendPayload = (extra: Record<string, unknown> = {}) => res.json({
+      ok: true,
+      role: payload.role,
+      email: payload.email,
+      ...extra,
+    });
+
+    prisma.usuario.findUnique({ where: { id: userId } })
+      .then(() => {
+        if (!req.cookies?.csrf_token) {
+          const csrfToken = createCsrfToken();
+          res.cookie("csrf_token", csrfToken, csrfCookieOptions);
+          return sendPayload({ csrfToken });
+        }
+
+        sendPayload();
+      })
+      .catch(() => {
+        if (!req.cookies?.csrf_token) {
+          const csrfToken = createCsrfToken();
+          res.cookie("csrf_token", csrfToken, csrfCookieOptions);
+          return res.json({ ok: true, role: payload.role, csrfToken });
+        }
+        return res.json({ ok: true, role: payload.role });
+      });
+    return;
+  } catch {
+    return res.status(401).json({ error: "Sesión inválida" });
+  }
+};
+

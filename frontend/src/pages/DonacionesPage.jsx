@@ -1,17 +1,20 @@
 import { useDonaciones } from "../hooks/useDonaciones";
 import { useState, useEffect } from "react";
 import { getPaymentTypes } from "../services/api";
+import { DonationTypeSelector } from "../components/DonationTypeSelector";
 import "./EventosPage.css";
 import "./PublicIndexVisual.css";
 
 export default function DonacionesPage() {
     const { donaciones, loading, crear } = useDonaciones();
     const [paymentTypes, setPaymentTypes] = useState([]);
+    const [selectedDonationType, setSelectedDonationType] = useState("");
     const [form, setForm] = useState({
         cantidad: "",
         nombre: "",
         email: "",
         metodoId: "",
+        tipoDonacion: "",
     });
 
     useEffect(() => {
@@ -30,8 +33,25 @@ export default function DonacionesPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await crear(form);
-        setForm({ cantidad: "", nombre: "", email: "", metodoId: "" });
+        const payload = { ...form };
+        await crear(payload);
+        setForm({ cantidad: "", nombre: "", email: "", metodoId: "", tipoDonacion: "" });
+        setSelectedDonationType("");
+    };
+
+    const handleDonationTypeChange = (value) => {
+        const defaultAmounts = {
+            puntual: "20",
+            veterinaria: "35",
+            alimentacion: "25",
+        };
+
+        setSelectedDonationType(value);
+        setForm((prev) => ({
+            ...prev,
+            tipoDonacion: value,
+            cantidad: value ? defaultAmounts[value] || prev.cantidad : prev.cantidad,
+        }));
     };
 
     const formatFecha = (value) => {
@@ -61,10 +81,20 @@ export default function DonacionesPage() {
                     <h2 className="event-title">Quiero donar</h2>
                     <p className="event-description">Cada aportación ayuda a mejorar la vida de los animales rescatados.</p>
                     <form className="public-form" onSubmit={handleSubmit}>
+                        <label className="public-muted" style={{ display: "block", marginBottom: "0.2rem" }}>
+                            Tipo de donación
+                        </label>
+                        <DonationTypeSelector
+                            value={selectedDonationType}
+                            onChange={handleDonationTypeChange}
+                        />
                         <input
                             placeholder="Cantidad"
                             value={form.cantidad}
-                            onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
+                            onChange={(e) => {
+                                setSelectedDonationType("");
+                                setForm((prev) => ({ ...prev, cantidad: e.target.value, tipoDonacion: "" }));
+                            }}
                         />
                         <input
                             placeholder="Nombre"

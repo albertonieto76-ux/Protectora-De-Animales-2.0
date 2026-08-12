@@ -52,6 +52,15 @@ const buildCalendarDays = (monthCursor: Date) => {
 const sortAdoptionsByCreatedAt = (items: any[]) =>
   [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+const getAnimalDisplayName = (item: any) => {
+  const animalName = item?.animal?.name || item?.animal?.nombre;
+  if (animalName) {
+    return animalName;
+  }
+
+  return `Animal #${item?.animalId ?? "?"}`;
+};
+
 export const AdminAdoptions = () => {
   const [adoptions, setAdoptions] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -59,6 +68,7 @@ export const AdminAdoptions = () => {
   const [selectedAdoptionId, setSelectedAdoptionId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [monthCursor, setMonthCursor] = useState(getMonthStart(new Date()));
+  const [statusFilter, setStatusFilter] = useState<"all" | "pendiente" | "aprobado" | "rechazado">("all");
   const detailPanelRef = useRef<HTMLDivElement | null>(null);
 
   const loadAdoptions = () => {
@@ -91,7 +101,8 @@ export const AdminAdoptions = () => {
   }, [adoptions, selectedAdoptionId]);
 
   const selectedAdoption = adoptions.find((item) => item.id === selectedAdoptionId) || null;
-  const sortedAdoptions = sortAdoptionsByCreatedAt(adoptions);
+  const filteredAdoptions = adoptions.filter((item) => statusFilter === "all" || item.estado === statusFilter);
+  const sortedAdoptions = sortAdoptionsByCreatedAt(filteredAdoptions);
   const selectedDateKey = toDateKey(selectedDate);
   const selectedDateAdoptions = sortAdoptionsByCreatedAt(
     adoptions.filter((item) => toDateKey(item.createdAt) === selectedDateKey),
@@ -131,7 +142,7 @@ export const AdminAdoptions = () => {
       setActionError(null);
       loadAdoptions();
     } catch (err) {
-      setActionError("Error al actualizar el estado de la solicitud.");
+      setActionError(err instanceof Error ? err.message : "Error al actualizar el estado de la solicitud.");
     }
   };
 
@@ -147,7 +158,7 @@ export const AdminAdoptions = () => {
         setActionError(null);
         loadAdoptions();
       } catch (err) {
-        setActionError("Error al eliminar la solicitud.");
+        setActionError(err instanceof Error ? err.message : "Error al eliminar la solicitud.");
       }
     }
   };
@@ -252,6 +263,14 @@ export const AdminAdoptions = () => {
                 <div className="editor-action-group">
                   <button
                     type="button"
+                    className="admin-btn-secondary"
+                    disabled={!adoptionForActions || adoptionForActions.estado === "pendiente"}
+                    onClick={() => handleStatusChange("pendiente")}
+                  >
+                    Pendiente
+                  </button>
+                  <button
+                    type="button"
                     className="admin-btn-primary"
                     disabled={!adoptionForActions || adoptionForActions.estado === "aprobado"}
                     onClick={() => handleStatusChange("aprobado")}
@@ -305,7 +324,7 @@ export const AdminAdoptions = () => {
                     </div>
                     <div className="form-group">
                       <label>Animal</label>
-                      <div>Animal #{adoptionForActions.animalId}</div>
+                      <div>{getAnimalDisplayName(adoptionForActions)}</div>
                     </div>
                     <div className="form-group">
                       <label>Estado</label>
@@ -342,9 +361,16 @@ export const AdminAdoptions = () => {
             <div className="list-panel-header">
               <div>
                 <p className="calendar-overline">Listado lateral</p>
-                <h2 className="calendar-title">Todas las solicitudes</h2>
+                <h2 className="calendar-title">Solicitudes</h2>
               </div>
-              <span className="list-counter">{adoptions.length}</span>
+              <span className="list-counter">{filteredAdoptions.length}</span>
+            </div>
+
+            <div className="adoption-status-filter-group" role="group" aria-label="Filtrar solicitudes por estado">
+              <button type="button" className={`adoption-status-filter-btn ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>Todas</button>
+              <button type="button" className={`adoption-status-filter-btn ${statusFilter === "pendiente" ? "active" : ""}`} onClick={() => setStatusFilter("pendiente")}>Pendientes</button>
+              <button type="button" className={`adoption-status-filter-btn ${statusFilter === "aprobado" ? "active" : ""}`} onClick={() => setStatusFilter("aprobado")}>Aprobadas</button>
+              <button type="button" className={`adoption-status-filter-btn ${statusFilter === "rechazado" ? "active" : ""}`} onClick={() => setStatusFilter("rechazado")}>Rechazadas</button>
             </div>
 
             {sortedAdoptions.length === 0 ? (
@@ -360,7 +386,7 @@ export const AdminAdoptions = () => {
                   >
                     <div className="appointment-list-main">
                       <strong>{item.nombre}</strong>
-                      <span>Animal #{item.animalId}</span>
+                      <span>{getAnimalDisplayName(item)}</span>
                     </div>
                     <div className="appointment-list-meta">
                       <span>{DATETIME_LABEL.format(new Date(item.createdAt))}</span>

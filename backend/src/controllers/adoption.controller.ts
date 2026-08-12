@@ -39,7 +39,9 @@ export const createAdoptionController = async (req: Request, res: Response) => {
     res.status(201).json(newAdoption);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error al crear adopción" });
+    const message = error instanceof Error ? error.message : "Error al crear adopción";
+    const status = message.includes("animal") || message.includes("ID") ? 400 : 500;
+    res.status(status).json({ error: message });
   }
 };
 

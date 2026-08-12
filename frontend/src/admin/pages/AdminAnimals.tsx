@@ -1,18 +1,17 @@
-import { Fragment, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Fragment, useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { AdminLayout } from "../layout/AdminLayout";
 import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getAnimales, createAnimal, deleteAnimal } from "../../api.js";
 import "../styles/adminPages.css";
 
 export const AdminAnimals = () => {
+  const location = useLocation();
   const [animals, setAnimals] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
-  const [expandedAnimalId, setExpandedAnimalId] = useState<number | null>(null);
-  const selectionPanelRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     species: "Perro",
@@ -39,6 +38,12 @@ export const AdminAnimals = () => {
   }, []);
 
   useEffect(() => {
+    if (location.state?.refreshAnimals) {
+      loadAnimals();
+    }
+  }, [location.state]);
+
+  useEffect(() => {
     if (!animals.length) {
       setSelectedAnimalId(null);
       return;
@@ -49,8 +54,6 @@ export const AdminAnimals = () => {
       setSelectedAnimalId(animals[0].id);
     }
   }, [animals, selectedAnimalId]);
-
-  const selectedAnimal = animals.find((item) => item.id === selectedAnimalId) || null;
 
   const resetForm = () => {
     setFormData({ name: "", species: "Perro", age: "", description: "", images: [] });
@@ -76,15 +79,8 @@ export const AdminAnimals = () => {
     }
   };
 
-  const togglePreview = (animalId: number) => {
-    setExpandedAnimalId((current) => (current === animalId ? null : animalId));
-  };
-
   const handleSelectAnimal = (animalId: number) => {
     setSelectedAnimalId(animalId);
-    requestAnimationFrame(() => {
-      selectionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   };
 
   const handleDelete = async (id: number) => {
@@ -202,7 +198,6 @@ export const AdminAnimals = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Nombre</th>
                   <th>Especie</th>
                   <th>Edad</th>
@@ -218,19 +213,8 @@ export const AdminAnimals = () => {
                       onClick={() => handleSelectAnimal(animal.id)}
                       style={{ cursor: "pointer" }}
                     >
-                      <td>#{animal.id}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="animal-name-link"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectAnimal(animal.id);
-                            togglePreview(animal.id);
-                          }}
-                        >
-                          <strong>{animal.name || animal.nombre}</strong>
-                        </button>
+                        <strong className="animal-name-link">{animal.name || animal.nombre}</strong>
                       </td>
                       <td>{animal.species || animal.especie}</td>
                       <td>{animal.age || animal.edad ? `${animal.age || animal.edad} años` : "N/D"}</td>
@@ -253,9 +237,9 @@ export const AdminAnimals = () => {
                         </div>
                       </td>
                     </tr>
-                    {expandedAnimalId === animal.id && animal.images?.length > 0 && (
+                    {selectedAnimalId === animal.id && animal.images?.length > 0 && (
                       <tr className="animal-preview-row" key={`preview-${animal.id}`}>
-                        <td colSpan={6}>
+                        <td colSpan={5}>
                           <div className="animal-preview-box">
                             {animal.images.map((src: string, index: number) => (
                               <img key={`${animal.id}-${index}`} src={src} alt={`${animal.name || animal.nombre} ${index + 1}`} />
@@ -271,28 +255,6 @@ export const AdminAnimals = () => {
           )}
         </div>
 
-        {selectedAnimal ? (
-          <div className="admin-selection-panel" ref={selectionPanelRef}>
-            <div className="admin-selection-title">
-              Seleccionado: <strong>{selectedAnimal.name || selectedAnimal.nombre}</strong>
-            </div>
-            <div className="admin-selection-actions">
-              <button
-                type="button"
-                className="admin-btn-secondary"
-                onClick={() => togglePreview(selectedAnimal.id)}
-              >
-                {expandedAnimalId === selectedAnimal.id ? "Ocultar fotos" : "Ver fotos"}
-              </button>
-              <Link to={`/admin/animals/${selectedAnimal.id}/edit`} className="admin-btn-primary admin-link-btn">
-                Modificar
-              </Link>
-              <button type="button" className="admin-btn-danger" onClick={() => handleDelete(selectedAnimal.id)}>
-                Eliminar
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
     </AdminLayout>
   );

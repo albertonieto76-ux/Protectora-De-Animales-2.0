@@ -109,6 +109,32 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
     expect(dbAnimal!.age).toBe(5);
   });
 
+  it('should update an animal without failing when replacement metadata is sent', async () => {
+    const created = await prisma.animal.create({
+      data: {
+        name: 'Milo',
+        species: 'Gato',
+        age: 2,
+        images: ['https://example.com/old.jpg']
+      }
+    });
+
+    const res = await request(app)
+      .put(`/api/animals/${created.id}`)
+      .send({
+        name: 'Milo actualizado',
+        age: 3,
+        existingImages: ['https://example.com/old.jpg'],
+        replaceIndex: 0,
+        images: ['https://example.com/new.jpg']
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('Milo actualizado');
+    expect(res.body.age).toBe(3);
+    expect(Array.isArray(res.body.images)).toBe(true);
+  });
+
   it('should delete an animal (DELETE /api/animals/:id)', async () => {
     const created = await prisma.animal.create({
       data: {

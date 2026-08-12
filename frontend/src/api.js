@@ -8,6 +8,16 @@ function getCookie(name) {
     return decodeURIComponent(cookieValue.split("=").slice(1).join("="));
 }
 
+function getStoredCsrfToken() {
+    if (typeof window === "undefined") return "";
+    return window.sessionStorage.getItem("csrf_token") || "";
+}
+
+function getStoredAdminToken() {
+    if (typeof window === "undefined") return "";
+    return getCookie("admin_token") || window.sessionStorage.getItem("admin_token") || "";
+}
+
 function shouldAttachCsrf(method) {
     const m = String(method || "GET").toUpperCase();
     return !["GET", "HEAD", "OPTIONS"].includes(m);
@@ -23,10 +33,15 @@ async function request(endpoint, options = {}) {
     };
 
     if (shouldAttachCsrf(method)) {
-        const csrfToken = getCookie("csrf_token");
+        const csrfToken = getCookie("csrf_token") || getStoredCsrfToken();
         if (csrfToken) {
             headers["X-CSRF-Token"] = csrfToken;
         }
+    }
+
+    const adminToken = getStoredAdminToken();
+    if (adminToken && !headers.Authorization) {
+        headers.Authorization = `Bearer ${adminToken}`;
     }
 
     const res = await fetch(`${API_URL}${endpoint}`, {
@@ -105,6 +120,9 @@ export const deleteVolunteerAppointment = (id) =>
    EVENTOS
 ============================ */
 export const getEventos = () => request("/events");
+export const getEventAssistants = (id) => request(`/events/${id}/assist`);
+export const registerEventAssistant = (id, data) =>
+    request(`/events/${id}/assist`, { method: "POST", body: JSON.stringify(data) });
 export const createEvento = (data) => {
     if (data instanceof FormData) {
         return request("/events", { method: "POST", body: data });

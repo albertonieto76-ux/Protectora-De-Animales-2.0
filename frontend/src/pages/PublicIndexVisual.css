@@ -1,6 +1,9 @@
 .public-shell {
   max-width: 1100px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
 }
 
 .public-hero {
@@ -19,6 +22,7 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.12;
+  color: #ffffff;
 }
 
 .public-hero p {
@@ -28,6 +32,30 @@
   margin-left: auto;
   margin-right: auto;
   line-height: 1.55;
+}
+
+.public-back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0.75rem 0;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s ease, transform 0.2s ease;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 3;
+}
+
+.public-back-link:hover {
+  background: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
 }
 
 .public-grid {
@@ -167,15 +195,37 @@
   margin-bottom: 0.25rem;
 }
 
+.volunteer-availability-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.45rem 0 0.8rem;
+}
+
 .volunteer-availability-chip {
-  display: inline-block;
-  margin-top: 0.45rem;
-  background: #ede9fe;
-  color: #6d28d9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
   border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.volunteer-availability-chip:hover {
+  border-color: #7c3aed;
+  color: #6d28d9;
+}
+
+.volunteer-availability-chip.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #fff;
+  border-color: transparent;
 }
 
 .public-modal-overlay {

@@ -1,8 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminLayout } from "../layout/AdminLayout";
 import { AdminStateNotice } from "../components/AdminStateNotice";
-import { getEventos, createEvento, updateEvento, deleteEvento } from "../../api.js";
+import { getEventos, createEvento, updateEvento, deleteEvento, getEventAssistants } from "../../api.js";
 import "../styles/adminPages.css";
+
+const toDateTimeLocalValue = (value?: string | Date | null) => {
+  if (!value) return "";
+
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
 
 export const AdminEvents = () => {
   const [eventos, setEventos] = useState<any[]>([]);
@@ -10,6 +27,9 @@ export const AdminEvents = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false);
+  const [assistants, setAssistants] = useState<any[]>([]);
+  const [assistantsLoading, setAssistantsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const eventFormRef = useRef<HTMLFormElement | null>(null);
@@ -38,6 +58,86 @@ export const AdminEvents = () => {
     loadEventos();
   }, []);
 
+  const loadAssistants = useCallback(async (eventId: number | null) => {
+    if (!eventId) {
+      setAssistants([]);
+      return;
+    }
+
+    setAssistantsLoading(true);
+    try {
+      const [assistantsResponse, eventsResponse] = await Promise.all([
+        getEventAssistants(eventId).catch(() => []),
+        getEventos().catch(() => []),
+      ]);
+
+      const assistantsData = Array.isArray(assistantsResponse) ? assistantsResponse : [];
+      const refreshedEvents = Array.isArray(eventsResponse) ? eventsResponse : [];
+
+      if (refreshedEvents.length > 0) {
+        setEventos(refreshedEvents);
+      }
+
+      const eventResponse = refreshedEvents.find((item: any) => item.id === eventId)
+        || eventos.find((item: any) => item.id === eventId)
+        || refreshedEvents[0];
+      const nestedAssistants = Array.isArray(eventResponse?.asistentes) ? eventResponse.asistentes : [];
+      const combinedAssistants = assistantsData.length > 0 ? assistantsData : nestedAssistants;
+      setAssistants(combinedAssistants);
+    } catch (err) {
+      console.warn("No se pudieron cargar los asistentes:", err);
+      const eventResponse = eventos.find((item: any) => item.id === eventId);
+      const fallbackAssistants = Array.isArray(eventResponse?.asistentes) ? eventResponse.asistentes : [];
+      setAssistants(fallbackAssistants);
+    } finally {
+      setAssistantsLoading(false);
+    }
+  }, []);
+
+  const refreshEventData = useCallback(async (eventId: number | null) => {
+    if (!eventId) return;
+    try {
+      const data = await getEventos();
+      const normalized = Array.isArray(data) ? data : [];
+      setEventos(normalized);
+      if (selectedEventId === null || selectedEventId === eventId) {
+        await loadAssistants(eventId);
+      }
+    } catch (err) {
+      console.warn("No se pudo refrescar la lista de eventos:", err);
+    }
+  }, [loadAssistants, selectedEventId]);
+
+  useEffect(() => {
+    const handleAssistantUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ eventId?: number; timestamp?: number }>;
+      const eventId = customEvent.detail?.eventId;
+      if (eventId) {
+        void refreshEventData(eventId);
+      }
+    };
+
+    const handleStorageUpdate = (event: StorageEvent) => {
+      if (event.key !== "protectora:event-assistant-updated") return;
+      try {
+        const data = event.newValue ? JSON.parse(event.newValue) : null;
+        if (data?.eventId) {
+          void refreshEventData(data.eventId);
+        }
+      } catch {
+        // Ignorar cambios inválidos del almacenamiento.
+      }
+    };
+
+    window.addEventListener("protectora:event-assistant-updated", handleAssistantUpdated as EventListener);
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener("protectora:event-assistant-updated", handleAssistantUpdated as EventListener);
+      window.removeEventListener("storage", handleStorageUpdate);
+    };
+  }, [refreshEventData]);
+
   useEffect(() => {
     if (!eventos.length) {
       setSelectedEventId(null);
@@ -52,7 +152,26 @@ export const AdminEvents = () => {
     }
   }, [eventos, selectedEventId]);
 
+  useEffect(() => {
+    if (!selectedEventId) {
+      setAssistants([]);
+      return;
+    }
+
+    void loadAssistants(selectedEventId);
+  }, [selectedEventId, loadAssistants]);
+
   const selectedEvent = eventos.find((item) => item.id === selectedEventId) || null;
+
+  const handleSelectEvent = async (eventId: number) => {
+    setSelectedEventId(eventId);
+    setSelectedImageIndex(0);
+    setShowSelectionPanel(true);
+    setShowForm(false);
+    setActionError(null);
+    await loadAssistants(eventId);
+    setShowSelectionPanel(true);
+  };
 
   const resetForm = () => {
     setFormData({ titulo: "", descripcion: "", fecha: "", lugar: "", images: [] });
@@ -71,13 +190,14 @@ export const AdminEvents = () => {
     const target = eventItem || selectedEvent;
     if (!target) return;
 
+    setSelectedEventId(target.id);
     setActionError(null);
     setFormMode("edit");
     setShowForm(true);
     setFormData({
       titulo: target.titulo || "",
       descripcion: target.descripcion || "",
-      fecha: target.fecha ? new Date(target.fecha).toISOString().slice(0, 10) : "",
+      fecha: toDateTimeLocalValue(target.fecha),
       lugar: target.lugar || "",
       images: [],
     });
@@ -127,18 +247,25 @@ export const AdminEvents = () => {
       <div className="admin-page-container">
         <div className="admin-header">
           <h1 className="admin-title">📅 Gestión de Eventos</h1>
-          <button
-            className="admin-btn-primary"
-            onClick={() => {
-              if (showForm) {
+          {showForm ? (
+            <button
+              className="admin-btn-secondary"
+              onClick={() => {
                 resetForm();
-              } else {
+              }}
+            >
+              Cancelar
+            </button>
+          ) : (
+            <button
+              className="admin-btn-primary"
+              onClick={() => {
                 startCreateFlow();
-              }
-            }}
-          >
-            {showForm ? "Cancelar" : "+ Nuevo Evento"}
-          </button>
+              }}
+            >
+              + Alta de eventos
+            </button>
+          )}
         </div>
 
         {loadError ? <AdminStateNotice message={loadError} variant="warning" compact /> : null}
@@ -159,9 +286,9 @@ export const AdminEvents = () => {
               </div>
 
               <div className="form-group">
-                <label>Fecha</label>
+                <label>Fecha y hora</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   required
                   value={formData.fecha}
                   onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
@@ -225,7 +352,6 @@ export const AdminEvents = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Título</th>
                   <th>Portada</th>
                   <th>Fecha</th>
@@ -240,14 +366,13 @@ export const AdminEvents = () => {
                   <tr
                     key={item.id}
                     className={selectedEvent?.id === item.id ? "admin-row-selected" : ""}
-                    onClick={() => {
-                      setSelectedEventId(item.id);
-                      setSelectedImageIndex(0);
-                      startEditFlow(item);
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void handleSelectEvent(item.id);
                     }}
                     style={{ cursor: "pointer" }}
                   >
-                    <td>#{item.id}</td>
                     <td><strong>{item.titulo}</strong></td>
                     <td>
                       {Array.isArray(item.images) && item.images.length > 0 ? (
@@ -260,11 +385,21 @@ export const AdminEvents = () => {
                         <span className="event-thumb-placeholder">Sin foto</span>
                       )}
                     </td>
-                    <td>{new Date(item.fecha).toLocaleDateString()}</td>
+                    <td>{new Date(item.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}</td>
                     <td>{item.lugar || "Sin definir"}</td>
                     <td>{item.descripcion || "Sin descripción"}</td>
                     <td>{Array.isArray(item.images) ? item.images.length : 0}</td>
                     <td>
+                      <button
+                        className="admin-btn-secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditFlow(item);
+                        }}
+                        style={{ marginRight: "0.5rem" }}
+                      >
+                        Modificar
+                      </button>
                       <button
                         className="admin-btn-danger"
                         onClick={(e) => {
@@ -282,16 +417,13 @@ export const AdminEvents = () => {
           )}
         </div>
 
-        {selectedEvent ? (
+        {showSelectionPanel && selectedEvent ? (
           <div className="admin-selection-panel">
             <div className="admin-selection-title">
               Seleccionado: <strong>{selectedEvent.titulo}</strong>
             </div>
             <div className="admin-selection-actions">
-              <button type="button" className="admin-btn-secondary" onClick={startCreateFlow}>
-                Nuevo
-              </button>
-              <button type="button" className="admin-btn-primary" onClick={startEditFlow}>
+              <button type="button" className="admin-btn-primary" onClick={() => startEditFlow(selectedEvent)}>
                 Modificar
               </button>
               <button type="button" className="admin-btn-danger" onClick={() => handleDelete(selectedEvent.id)}>
@@ -302,36 +434,60 @@ export const AdminEvents = () => {
         ) : null}
 
         {selectedEvent ? (
-          <div className="form-card" style={{ marginTop: "1.25rem" }}>
-            <h3>Vista previa del evento seleccionado</h3>
-            <p style={{ marginTop: 0, color: "#475569" }}>
-              {selectedEvent.titulo} · {new Date(selectedEvent.fecha).toLocaleDateString()}
-            </p>
+          <>
+            <div className="form-card" style={{ marginTop: "1.25rem" }}>
+              <h3>Vista previa del evento seleccionado</h3>
+              <p style={{ marginTop: 0, color: "#475569" }}>
+                {selectedEvent.titulo} · {new Date(selectedEvent.fecha).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}
+              </p>
 
-            {Array.isArray(selectedEvent.images) && selectedEvent.images.length > 0 ? (
-              <div className="event-gallery-wrap">
-                <img
-                  src={selectedEvent.images[selectedImageIndex] || selectedEvent.images[0]}
-                  alt={`Foto ${selectedImageIndex + 1} de ${selectedEvent.titulo}`}
-                  className="event-gallery-main"
-                />
-                <div className="event-gallery-thumbs">
-                  {selectedEvent.images.map((src: string, index: number) => (
-                    <button
-                      key={`event-image-${selectedEvent.id}-${index}`}
-                      type="button"
-                      className={`event-gallery-thumb-btn ${selectedImageIndex === index ? "active" : ""}`}
-                      onClick={() => setSelectedImageIndex(index)}
-                    >
-                      <img src={src} alt={`Miniatura ${index + 1}`} className="event-gallery-thumb" />
-                    </button>
+              {Array.isArray(selectedEvent.images) && selectedEvent.images.length > 0 ? (
+                <div className="event-gallery-wrap">
+                  <img
+                    src={selectedEvent.images[selectedImageIndex] || selectedEvent.images[0]}
+                    alt={`Foto ${selectedImageIndex + 1} de ${selectedEvent.titulo}`}
+                    className="event-gallery-main"
+                  />
+                  <div className="event-gallery-thumbs">
+                    {selectedEvent.images.map((src: string, index: number) => (
+                      <button
+                        key={`event-image-${selectedEvent.id}-${index}`}
+                        type="button"
+                        className={`event-gallery-thumb-btn ${selectedImageIndex === index ? "active" : ""}`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      >
+                        <img src={src} alt={`Miniatura ${index + 1}`} className="event-gallery-thumb" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <AdminStateNotice message="El evento seleccionado no tiene fotos cargadas." variant="empty" compact />
+              )}
+            </div>
+
+            <div className="form-card" style={{ marginTop: "1.25rem", border: "2px solid #f59e0b" }}>
+              <h3>Personas apuntadas</h3>
+              <div style={{ color: "#92400e", fontSize: "1rem", marginBottom: "0.75rem", fontWeight: 600 }}>
+                {assistantsLoading ? "Cargando apuntados..." : `${assistants.length} personas apuntadas`}
+              </div>
+
+              {assistants.length === 0 ? (
+                <AdminStateNotice message="Todavía no hay personas apuntadas a este evento." variant="empty" compact />
+              ) : (
+                <div style={{ display: "grid", gap: "0.75rem" }}>
+                  {assistants.map((assistant: any) => (
+                    <div key={assistant.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.8rem", background: "#fff" }}>
+                      <div style={{ fontWeight: 700, color: "#111827" }}>{assistant.nombre || "Sin nombre"}</div>
+                      <div style={{ color: "#475569", fontSize: "0.95rem" }}>{assistant.email || "Sin email"}</div>
+                      {assistant.telefono ? <div style={{ color: "#475569", fontSize: "0.95rem" }}>Tel: {assistant.telefono}</div> : null}
+                      {assistant.mensaje ? <div style={{ color: "#475569", fontSize: "0.95rem", marginTop: "0.25rem" }}>{assistant.mensaje}</div> : null}
+                    </div>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <AdminStateNotice message="El evento seleccionado no tiene fotos cargadas." variant="empty" compact />
-            )}
-          </div>
+              )}
+            </div>
+          </>
         ) : null}
       </div>
     </AdminLayout>

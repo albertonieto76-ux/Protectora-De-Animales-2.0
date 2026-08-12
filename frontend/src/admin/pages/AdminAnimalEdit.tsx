@@ -15,6 +15,7 @@ export const AdminAnimalEdit = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [replacePhotoIndex, setReplacePhotoIndex] = useState<number | null>(null);
   const [replacePhotoFile, setReplacePhotoFile] = useState<File | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -61,16 +62,22 @@ export const AdminAnimalEdit = () => {
       if (formData.description) payload.append("description", formData.description);
 
       if (replacePhotoIndex !== null && replacePhotoFile) {
-        payload.append("existingImages", JSON.stringify(animal.images || []));
         payload.append("replaceIndex", String(replacePhotoIndex));
         payload.append("images", replacePhotoFile);
       } else {
         formData.images.forEach((file) => payload.append("images", file));
       }
 
+      if (replacePhotoIndex !== null && replacePhotoFile && animal.images?.length) {
+        const nextPreviewUrl = URL.createObjectURL(replacePhotoFile);
+        setPreviewImageUrl(nextPreviewUrl);
+        const updatedImages = [...(animal.images || [])];
+        updatedImages[replacePhotoIndex] = nextPreviewUrl;
+        setAnimal({ ...animal, images: updatedImages });
+      }
       await updateAnimal(animal.id, payload);
       setActionError(null);
-      navigate("/admin/animals");
+      navigate("/admin/animals", { state: { refreshAnimals: true } });
     } catch (err) {
       setActionError("Error al guardar cambios del animal.");
     }
@@ -100,7 +107,7 @@ export const AdminAnimalEdit = () => {
     <AdminLayout>
       <div className="admin-page-container">
         <div className="admin-header">
-          <h1 className="admin-title">Editar Animal #{animal.id}</h1>
+          <h1 className="admin-title">Editar animal</h1>
         </div>
 
         {actionError ? <AdminStateNotice message={actionError} variant="warning" compact /> : null}
@@ -174,16 +181,19 @@ export const AdminAnimalEdit = () => {
             <div className="form-group" style={{ marginBottom: "1rem" }}>
               <label>Selecciona una foto para reemplazar</label>
               <div className="edit-photo-grid">
-                {animal.images.slice(0, 10).map((src: string, index: number) => (
-                  <button
-                    key={`edit-photo-${animal.id}-${index}`}
-                    type="button"
-                    className={`edit-photo-thumb ${replacePhotoIndex === index ? "selected" : ""}`}
-                    onClick={() => setReplacePhotoIndex(index)}
-                  >
-                    <img src={src} alt={`${animal.name || animal.nombre} ${index + 1}`} />
-                  </button>
-                ))}
+                {animal.images.slice(0, 10).map((src: string, index: number) => {
+                  const displaySrc = previewImageUrl && replacePhotoIndex === index ? previewImageUrl : src;
+                  return (
+                    <button
+                      key={`edit-photo-${animal.id}-${index}`}
+                      type="button"
+                      className={`edit-photo-thumb ${replacePhotoIndex === index ? "selected" : ""}`}
+                      onClick={() => setReplacePhotoIndex(index)}
+                    >
+                      <img src={displaySrc} alt={`${animal.name || animal.nombre} ${index + 1}`} />
+                    </button>
+                  );
+                })}
               </div>
               <label className={`file-picker-btn ${replacePhotoIndex === null ? "disabled" : ""}`}>
                 Seleccionar archivo
@@ -191,7 +201,13 @@ export const AdminAnimalEdit = () => {
                   type="file"
                   accept="image/*"
                   className="file-picker-input"
-                  onChange={(e) => setReplacePhotoFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setReplacePhotoFile(file);
+                    if (file) {
+                      setPreviewImageUrl(URL.createObjectURL(file));
+                    }
+                  }}
                   disabled={replacePhotoIndex === null}
                 />
               </label>

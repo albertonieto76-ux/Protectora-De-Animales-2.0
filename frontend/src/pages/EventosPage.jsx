@@ -1,14 +1,12 @@
 import { useEventos } from "../hooks/useEventos";
-import { useVoluntarios } from "../hooks/useVoluntarios";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { registerEventAssistant } from "../api.js";
 import "./EventosPage.css";
 import "./PublicIndexVisual.css";
 
-const DISPONIBILIDADES = ["Fines de semana", "Entre semana", "Mañanas", "Tardes", "Flexible"];
-
 export default function EventosPage() {
     const { eventos, loading } = useEventos();
-    const { crear } = useVoluntarios();
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedEventImageIndex, setSelectedEventImageIndex] = useState(0);
@@ -19,7 +17,7 @@ export default function EventosPage() {
         nombre: "",
         email: "",
         telefono: "",
-        disponibilidad: "",
+        mensaje: "",
     });
 
     useEffect(() => {
@@ -45,7 +43,7 @@ export default function EventosPage() {
             nombre: "",
             email: "",
             telefono: "",
-            disponibilidad: "",
+            mensaje: "",
         });
     };
 
@@ -58,12 +56,20 @@ export default function EventosPage() {
         e.preventDefault();
         setEnviando(true);
         try {
-            await crear({
+            await registerEventAssistant(selectedEvent?.id, {
                 ...form,
-                mensaje: selectedEvent?.titulo
-                    ? `Inscripción desde eventos para: ${selectedEvent.titulo}`
-                    : "Inscripción desde página de eventos",
+                mensaje: form.mensaje?.trim()
+                    ? form.mensaje.trim()
+                    : selectedEvent?.titulo
+                        ? `Inscripción desde eventos para: ${selectedEvent.titulo}`
+                        : "Inscripción desde página de eventos",
             });
+            const eventId = selectedEvent?.id;
+            if (eventId) {
+                const payload = { eventId, timestamp: Date.now() };
+                window.dispatchEvent(new CustomEvent("protectora:event-assistant-updated", { detail: payload }));
+                window.localStorage.setItem("protectora:event-assistant-updated", JSON.stringify(payload));
+            }
             setEnviado(true);
             setTimeout(() => {
                 setEnviado(false);
@@ -112,6 +118,9 @@ export default function EventosPage() {
         <>
             <div className="eventos-page public-shell">
                 <header className="eventos-header public-hero">
+                    <Link to="/" className="public-back-link">
+                        ← Volver a la página principal
+                    </Link>
                     <h1>Eventos</h1>
                     <p>Explora las próximas actividades y encuentros organizados por la protectora.</p>
                 </header>
@@ -265,17 +274,12 @@ export default function EventosPage() {
                                         value={form.telefono}
                                         onChange={(e) => setForm({ ...form, telefono: e.target.value })}
                                     />
-                                    <select
-                                        value={form.disponibilidad}
-                                        onChange={(e) => setForm({ ...form, disponibilidad: e.target.value })}
-                                        required
-                                    >
-                                        <option value="" disabled>Disponibilidad horaria</option>
-                                        {DISPONIBILIDADES.map((d) => (
-                                            <option key={d} value={d}>{d}</option>
-                                        ))}
-                                    </select>
-
+                                    <textarea
+                                        rows={3}
+                                        placeholder="Mensaje (opcional)"
+                                        value={form.mensaje}
+                                        onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
+                                    />
                                     <button
                                         type="submit"
                                         disabled={enviando}

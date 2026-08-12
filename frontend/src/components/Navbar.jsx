@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createVoluntario, getAnimales, createAdopcion, createDonacion, getPaymentTypes } from "../services/api";
+import { VolunteerAvailabilitySelector } from "./VolunteerAvailabilitySelector";
+import { DonationTypeSelector } from "./DonationTypeSelector";
 import "./Navbar.css";
 
 const DISPONIBILIDADES = ["Fines de semana", "Entre semana", "Mañanas", "Tardes", "Flexible"];
 const formVolInicial = { nombre: "", email: "", telefono: "", disponibilidad: "" };
 const formAdopInicial = { nombre: "", email: "", telefono: "", mensaje: "" };
-const formDonacionInicial = { cantidad: "", nombre: "", email: "", metodoId: "" };
+const formDonacionInicial = { cantidad: "", nombre: "", email: "", metodoId: "", tipoDonacion: "" };
 const DONATION_PRESETS = {
   puntual: { label: "Aporte puntual", amount: "20" },
   veterinaria: { label: "Veterinaria", amount: "35" },
@@ -16,6 +18,7 @@ const ADOPTION_MODAL_IMAGE = "https://images.unsplash.com/photo-1517849845537-4d
 const ADOPTION_LOCAL_FALLBACK_IMAGE = "/hero-hamsters.jpg";
 const DONATION_MODAL_IMAGE = "https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&w=1200&q=80";
 const VOLUNTEER_MODAL_IMAGE = "https://images.unsplash.com/photo-1526976668912-1a811878dd37?auto=format&fit=crop&w=1200&q=80";
+const VOLUNTEER_SMILE_IMAGE = "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=400&q=80";
 
 export default function Navbar() {
   const [isAdminOpen, setIsAdminOpen]     = useState(false);
@@ -232,7 +235,7 @@ export default function Navbar() {
     const preset = DONATION_PRESETS[presetKey];
     if (!preset) return;
     setDonationPreset(presetKey);
-    setDonationForm((prev) => ({ ...prev, cantidad: preset.amount }));
+    setDonationForm((prev) => ({ ...prev, cantidad: preset.amount, tipoDonacion: presetKey }));
   };
 
   /* ── cargar animales al abrir modal adopción ── */
@@ -300,9 +303,14 @@ export default function Navbar() {
     e.preventDefault();
     setDonationSending(true);
     try {
-      await createDonacion(donationForm);
+      const payload = {
+        ...donationForm,
+        tipoDonacion: donationForm.tipoDonacion || donationPreset || "",
+      };
+      await createDonacion(payload);
       setDonationSent(true);
       setDonationForm(formDonacionInicial);
+      setDonationPreset("puntual");
       setTimeout(() => { setDonationSent(false); setDonationModalOpen(false); }, 2400);
     } catch (err) {
       console.error("Error al enviar donación:", err);
@@ -623,11 +631,6 @@ export default function Navbar() {
                     </div>
                     <h2>Explora perfiles con foto y tipología</h2>
                     <p>Elige el animal que quieres acoger en tu hogar en una vista inspirada en Eventos: imagen principal, lectura rápida y fichas mejor jerarquizadas.</p>
-                    <div className="modal-typology-row">
-                      <span className="modal-typology-pill">Perros</span>
-                      <span className="modal-typology-pill">Gatos</span>
-                      <span className="modal-typology-pill">Otros</span>
-                    </div>
                   </div>
                 </div>
 
@@ -751,29 +754,10 @@ export default function Navbar() {
                     </div>
                     <h2>Haz tu donación</h2>
                     <p>Elige el monto y la forma de pago para apoyar a la protectora.</p>
-                    <div className="modal-typology-row">
-                      <button
-                        type="button"
-                        className={`modal-typology-pill pill-button ${donationPreset === "puntual" ? "active" : ""}`}
-                        onClick={() => applyDonationPreset("puntual")}
-                      >
-                        {DONATION_PRESETS.puntual.label}
-                      </button>
-                      <button
-                        type="button"
-                        className={`modal-typology-pill pill-button ${donationPreset === "veterinaria" ? "active" : ""}`}
-                        onClick={() => applyDonationPreset("veterinaria")}
-                      >
-                        {DONATION_PRESETS.veterinaria.label}
-                      </button>
-                      <button
-                        type="button"
-                        className={`modal-typology-pill pill-button ${donationPreset === "alimentacion" ? "active" : ""}`}
-                        onClick={() => applyDonationPreset("alimentacion")}
-                      >
-                        {DONATION_PRESETS.alimentacion.label}
-                      </button>
-                    </div>
+                    <DonationTypeSelector
+                      value={donationPreset}
+                      onChange={(value) => applyDonationPreset(value)}
+                    />
                   </div>
                 </div>
                 <form onSubmit={handleDonationSubmit} className="modal-form">
@@ -786,8 +770,8 @@ export default function Navbar() {
                     className="modal-input"
                     value={donationForm.cantidad}
                     onChange={(e) => {
-                      setDonationPreset(null);
-                      setDonationForm({ ...donationForm, cantidad: e.target.value });
+                      setDonationPreset("");
+                      setDonationForm({ ...donationForm, cantidad: e.target.value, tipoDonacion: "" });
                     }}
                   />
                   <input type="text" placeholder="Nombre completo *" required className="modal-input" value={donationForm.nombre} onChange={(e) => setDonationForm({ ...donationForm, nombre: e.target.value })} />
@@ -875,10 +859,18 @@ export default function Navbar() {
                       <span className="modal-kicker">Voluntariado</span>
                       <span className="modal-kicker muted">Inscripción abierta</span>
                     </div>
-                    <h2>Inscríbete con contexto visual</h2>
-                    <p>Tu ayuda marca la diferencia. Mantengo la misma lógica del formulario, pero con entrada tipo Eventos: foto, tipología y jerarquía editorial.</p>
+                    <h2>¡APÚNTATE!</h2>
+                    <p>Tu ayuda marca la diferencia. Comparte tu tiempo, tu energía y tu cariño con los animales que más lo necesitan.</p>
                     <div className="modal-typology-row">
                       {DISPONIBILIDADES.slice(0, 4).map((d) => <span key={d} className="modal-typology-pill">{d}</span>)}
+                    </div>
+                    <div style={{ marginTop: "0.9rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <img
+                        src={VOLUNTEER_SMILE_IMAGE}
+                        alt="Caballo sonriendo"
+                        style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "50%", border: "2px solid #f59e0b" }}
+                      />
+                      <span style={{ color: "#92400e", fontWeight: 700, fontSize: "0.95rem" }}>Tu sonrisa también ayuda</span>
                     </div>
                   </div>
                 </div>
@@ -886,10 +878,12 @@ export default function Navbar() {
                   <input type="text"  placeholder="Nombre completo *"      required className="modal-input" value={volForm.nombre}        onChange={(e) => setVolForm({ ...volForm, nombre:        e.target.value })} />
                   <input type="email" placeholder="Correo electrónico *"   required className="modal-input" value={volForm.email}         onChange={(e) => setVolForm({ ...volForm, email:         e.target.value })} />
                   <input type="tel"   placeholder="Teléfono (opcional)"             className="modal-input" value={volForm.telefono}      onChange={(e) => setVolForm({ ...volForm, telefono:      e.target.value })} />
-                  <select value={volForm.disponibilidad} onChange={(e) => setVolForm({ ...volForm, disponibilidad: e.target.value })} className="modal-input modal-select">
-                    <option value="" disabled>Disponibilidad horaria</option>
-                    {DISPONIBILIDADES.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <label className="modal-field-label">Selecciona tu disponibilidad</label>
+                  <VolunteerAvailabilitySelector
+                    value={volForm.disponibilidad}
+                    onChange={(value) => setVolForm({ ...volForm, disponibilidad: value })}
+                    className="modal-availability-selector"
+                  />
                   <button type="submit" disabled={volEnviando} className={`modal-submit-btn ${volEnviando ? "loading" : ""}`}>
                     {volEnviando ? "Enviando..." : "✨ Inscribirme como voluntario"}
                   </button>

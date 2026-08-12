@@ -52,6 +52,46 @@
   box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.14);
 }
 
+.admin-login-password-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3rem;
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.admin-login-password-row input {
+  width: 100%;
+}
+
+.admin-login-visibility {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-login-visibility svg {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.admin-login-visibility:hover {
+  color: #0f172a;
+  border-color: #334155;
+  background: #eef3f8;
+}
+
+.admin-login-visibility:focus {
+  outline: none;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.14);
+}
+
 .admin-login-error {
   margin: 0;
   color: #b91c1c;

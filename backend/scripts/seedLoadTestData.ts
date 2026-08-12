@@ -297,7 +297,7 @@ async function createEvents() {
   for (let i = 0; i < 10; i++) {
     const eventDate = new Date(today);
     eventDate.setDate(today.getDate() + 3 * (i + 1));
-    eventDate.setHours(10 + (i % 4), 0, 0, 0);
+    eventDate.setHours(10 + (i % 4), 15 + (i % 3) * 15, 0, 0);
     const images = await prepareEventImages(i);
 
     const event = await prisma.evento.create({

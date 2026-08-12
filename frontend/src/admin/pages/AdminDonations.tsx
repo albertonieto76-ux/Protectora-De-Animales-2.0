@@ -4,6 +4,17 @@ import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getDonaciones, getPaymentTypes, createPaymentType, updatePaymentType, deletePaymentType } from "../../api.js";
 import "../styles/adminPages.css";
 
+const DONATION_TYPE_LABELS: Record<string, string> = {
+  puntual: "Aporte puntual",
+  veterinaria: "Veterinaria",
+  alimentacion: "Alimentación",
+};
+
+const getDonationTypeLabel = (value?: string | null) => {
+  if (!value) return "-";
+  return DONATION_TYPE_LABELS[value] || value;
+};
+
 export const AdminDonations = () => {
   const [donaciones, setDonaciones] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -160,10 +171,10 @@ export const AdminDonations = () => {
             <table className="admin-table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Donante</th>
                   <th>Email</th>
                   <th>Importe (€)</th>
+                  <th>Tipo</th>
                   <th>Método</th>
                   <th>Fecha</th>
                 </tr>
@@ -171,10 +182,10 @@ export const AdminDonations = () => {
               <tbody>
                 {donaciones.map((item) => (
                   <tr key={item.id}>
-                    <td>#{item.id}</td>
                     <td><strong>{item.nombre || "Anónimo"}</strong></td>
                     <td>{item.email || "-"}</td>
                     <td><span style={{ fontWeight: 700, color: "#059669" }}>+{item.cantidad} €</span></td>
+                    <td><span className="badge" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>{getDonationTypeLabel(item.tipoDonacion)}</span></td>
                     <td><span className="badge" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}>{item.metodo?.label || item.metodo || "-"}</span></td>
                     <td>{new Date(item.createdAt || Date.now()).toLocaleDateString()}</td>
                   </tr>
@@ -253,7 +264,6 @@ export const AdminDonations = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
                       <th>Clave</th>
                       <th>Etiqueta</th>
                       <th>Cuenta/PayPal</th>
@@ -268,7 +278,6 @@ export const AdminDonations = () => {
                           onClick={() => handleSelectPaymentType(type.id)}
                           style={{ cursor: "pointer" }}
                         >
-                        <td>#{type.id}</td>
                         <td>{type.tipo}</td>
                         <td>{type.label}</td>
                         <td>{type.account || "-"}</td>

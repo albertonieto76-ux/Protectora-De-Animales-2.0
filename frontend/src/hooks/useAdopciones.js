@@ -23,8 +23,13 @@ export function useAdopciones() {
     };
 
     const crear = async (adopcion) => {
-        await createAdopcion(adopcion);
-        await cargarAdopciones();
+        try {
+            await createAdopcion(adopcion);
+            await cargarAdopciones();
+            return { ok: true };
+        } catch (err) {
+            return { ok: false, error: err?.message || "No se pudo enviar la solicitud" };
+        }
     };
 
     useEffect(() => {

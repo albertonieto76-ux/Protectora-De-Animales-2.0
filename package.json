@@ -17,6 +17,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "pptxgenjs": "^4.0.1",
     "typescript": "^7.0.2"
   }
 }

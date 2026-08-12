@@ -1,24 +1,28 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const backendTarget = process.env.VITE_BACKEND_TARGET || 'http://localhost:4000';
+const devHost = process.env.VITE_DEV_HOST || 'localhost';
+
 export default defineConfig({
     plugins: [react()],
     server: {
+        host: devHost,
         port: 5173,
         open: true,
         proxy: {
             '/api': {
-                target: 'http://localhost:4000',
+                target: backendTarget,
                 changeOrigin: true,
                 secure: false
             },
             '/uploads': {
-                target: 'http://localhost:4000',
+                target: backendTarget,
                 changeOrigin: true,
                 secure: false
             },
             '/seed-assets': {
-                target: 'http://localhost:4000',
+                target: backendTarget,
                 changeOrigin: true,
                 secure: false
             }

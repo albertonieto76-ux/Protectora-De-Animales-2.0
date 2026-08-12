@@ -15,6 +15,7 @@ export default function AdopcionesPage() {
         email: "",
         mensaje: "",
     });
+    const [submitError, setSubmitError] = useState("");
 
     useEffect(() => {
         getAnimales()
@@ -34,8 +35,13 @@ export default function AdopcionesPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await crear(form);
-        setForm({ animalId: "", nombre: "", email: "", mensaje: "" });
+        setSubmitError("");
+        const result = await crear(form);
+        if (result?.ok) {
+            setForm({ animalId: "", nombre: "", email: "", mensaje: "" });
+            return;
+        }
+        setSubmitError(result?.error || "No se pudo enviar la solicitud");
     };
 
     const formatFecha = (value) => {
@@ -96,11 +102,18 @@ export default function AdopcionesPage() {
                     <h2 className="event-title">Quiero adoptar</h2>
                     <p className="event-description">Completa los datos para iniciar el proceso de adopción responsable.</p>
                     <form className="public-form" onSubmit={handleSubmit}>
-                        <input
-                            placeholder="ID Animal"
+                        {submitError ? <p className="error-message">{submitError}</p> : null}
+                        <select
                             value={form.animalId}
                             onChange={(e) => setForm({ ...form, animalId: e.target.value })}
-                        />
+                        >
+                            <option value="">Selecciona un animal</option>
+                            {animales.map((animal) => (
+                                <option key={animal.id} value={animal.id}>
+                                    {animal.name || animal.nombre || `Animal #${animal.id}`}
+                                </option>
+                            ))}
+                        </select>
                         {form.animalId ? (
                             <img
                                 className="event-public-image"
