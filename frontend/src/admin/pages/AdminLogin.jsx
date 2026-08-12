@@ -64,8 +64,22 @@ export function AdminLogin() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo iniciar sesión");
+      const rawBody = await res.text();
+      let data = {};
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody);
+        } catch {
+          data = {};
+        }
+      }
+
+      if (!res.ok) {
+        if (res.status === 400 || res.status === 401) {
+          throw new Error("E-mail o password incorrectos");
+        }
+        throw new Error(data.error || "No se pudo iniciar sesión");
+      }
 
       if (data.csrfToken) {
         window.sessionStorage.setItem("csrf_token", data.csrfToken);
@@ -82,7 +96,12 @@ export function AdminLogin() {
       window.location.assign("/admin/dashboard");
       return;
     } catch (err) {
-      setError(err.message || "Error desconocido");
+      const message = err?.message || "";
+      if (message === "No se pudo iniciar sesión" || message === "Credenciales inválidas") {
+        setError("E-mail o password incorrectos");
+      } else {
+        setError(message || "Error desconocido");
+      }
     } finally {
       setLoading(false);
     }

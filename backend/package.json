@@ -9,6 +9,7 @@
     "dev": "tsx watch src/server.ts",
     "prisma:generate": "npx prisma generate",
     "prisma:push": "npx prisma db push",
+    "seed:admin": "tsx scripts/seedAdmin.ts",
     "images:migrate-to-db": "tsx scripts/migrateImagesToDb.ts",
     "images:migrate-to-db:clean": "tsx scripts/migrateImagesToDb.ts --clean",
     "seed:load-test": "tsx scripts/seedLoadTestData.ts",

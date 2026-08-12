@@ -61,12 +61,20 @@ npm --prefix backend exec prisma db push
 Si quieres crear el administrador inicial:
 
 ```bash
-npm --prefix backend exec tsx scripts/seedAdmin.ts
+npm --prefix backend exec tsx backend/scripts/seedAdmin.ts
+```
+
+En Windows PowerShell, usa esta variante para evitar bloqueos de `npm.ps1`:
+
+```bash
+npm.cmd run seed:admin
 ```
 
 Credenciales por defecto:
 - Email: `admin@protectora.com`
-- Contraseña: `admin1234`
+- Contraseña: `Admin1234!`
+
+Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
 
 ### 1.3. Arrancar backend y frontend
 
@@ -163,6 +171,11 @@ docker compose -f docker/docker-compose.yml down
 
 URLs:
 - Frontend: http://localhost:5173
+- Panel admin: http://localhost:5173/admin/login
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
+
 - Backend API: http://localhost:4000/api
 - Base de datos: localhost:5432
 
