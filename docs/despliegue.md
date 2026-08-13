@@ -10,7 +10,7 @@
 
 Ejemplo:
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/protectora?schema=public
+DATABASE_URL=postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public
 ```
 
 ## Opción 2: base de datos externa

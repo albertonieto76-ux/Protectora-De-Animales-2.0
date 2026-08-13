@@ -42,7 +42,7 @@ await loadEnvIfAvailable([
   path.resolve(__dirname, 'backend', '.env'),
 ]);
 
-const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/protectora?schema=public";
+const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public";
 
 const defineConfig = await resolveDefineConfig();
 

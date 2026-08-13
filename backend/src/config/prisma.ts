@@ -6,7 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const databaseUrl =
     process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5432/protectora?schema=public";
+    "postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public";
 
 const pool = new Pool({
     connectionString: databaseUrl,

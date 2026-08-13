@@ -33,7 +33,7 @@ Contenido mínimo recomendado:
 ```env
 NODE_ENV=development
 PORT=4000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/protectora?schema=public
+DATABASE_URL=postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public
 JWT_SECRET=tu_secreto_muy_largo
 MFA_ENCRYPTION_KEY=otra_clave_muy_larga
 CORS_ORIGINS=http://localhost:5173,http://localhost:8080
