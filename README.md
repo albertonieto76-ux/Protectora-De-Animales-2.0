@@ -37,6 +37,24 @@ CORS_ORIGINS=http://localhost:5173
 VITE_API_URL=http://localhost:4000/api
 ```
 
+## 0) Instalación desde cero
+
+Si quieres preparar el proyecto completo con un solo comando según tu sistema operativo:
+
+- Windows PowerShell:
+
+```powershell
+./scripts/install-project.ps1
+```
+
+- Linux, macOS o Git Bash:
+
+```bash
+./scripts/install-project.sh
+```
+
+Estos scripts instalan dependencias, crean `.env` si no existe, generan Prisma y aplican el esquema de base de datos.
+
 ## 1) Instalación para desarrollo con npm
 
 Esta opción sirve para trabajar en local con el backend y el frontend ejecutándose directamente desde Node.

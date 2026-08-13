@@ -20,7 +20,7 @@ export default defineConfig({
     },
 
     env: {
-      DATABASE_URL: "postgresql://postgres:postgres825j@127.0.0.1:5432/AdoptaBBDD_db?schema=public"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/protectora?schema=public"
     },
 
     setupFiles: ['./src/tests/setup.ts',

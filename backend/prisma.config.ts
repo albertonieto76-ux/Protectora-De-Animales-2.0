@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres825j@localhost:5432/AdoptaBBDD_db?schema=public";
+const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/protectora?schema=public";
 
 export default defineConfig({
   schema: './prisma/schema.prisma',
