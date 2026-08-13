@@ -1,6 +1,14 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import jwt from "jsonwebtoken";
 import app from "../app.js";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 describe("pruebas de integración importadas del proyecto anterior", () => {
   it("GET /api/animals devuelve la lista de animales", async () => {
@@ -11,8 +19,10 @@ describe("pruebas de integración importadas del proyecto anterior", () => {
   });
 
   it("POST /api/animals crea un animal", async () => {
+    const adminToken = buildAdminToken();
     const res = await request(app)
       .post("/api/animals")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({
         name: "Luna",
         species: "Perro",
@@ -32,12 +42,16 @@ describe("pruebas de integración importadas del proyecto anterior", () => {
   });
 
   it("POST /api/adoptions crea una adopción con animal válido", async () => {
-    const animal = await request(app).post("/api/animals").send({
-      name: "Milo",
-      species: "Gato",
-      age: 2,
-      description: "Animal para adopción en prueba integrada",
-    });
+    const adminToken = buildAdminToken();
+    const animal = await request(app)
+      .post("/api/animals")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Milo",
+        species: "Gato",
+        age: 2,
+        description: "Animal para adopción en prueba integrada",
+      });
 
     const res = await request(app)
       .post("/api/adoptions")

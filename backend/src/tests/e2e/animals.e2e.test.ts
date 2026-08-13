@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../../app.ts';
 import { resetDb } from './setup/resetDb.ts';
 import { prisma } from '../../services/prisma.ts';
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: 'admin', email: 'admin@protectora.com' },
+    process.env.JWT_SECRET || 'change-me-in-production',
+    { issuer: 'protectora-backend', audience: 'protectora-admin' }
+  );
 
 describe('Animals E2E Tests', { concurrent: false }, () => {
   beforeEach(async () => {
@@ -14,6 +22,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
   });
 
   it('should create an animal (POST /api/animals)', async () => {
+    const adminToken = buildAdminToken();
     const animalData = {
       name: 'Luna',
       species: 'Perro',
@@ -24,6 +33,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .post('/api/animals')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(animalData);
 
     expect(res.status).toBe(201);
@@ -80,6 +90,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
   });
 
   it('should update an animal (PUT /api/animals/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.animal.create({
       data: {
         name: 'Rocky',
@@ -95,6 +106,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .put(`/api/animals/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateData);
 
     expect(res.status).toBe(200);
@@ -110,6 +122,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
   });
 
   it('should update an animal without failing when replacement metadata is sent', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.animal.create({
       data: {
         name: 'Milo',
@@ -121,6 +134,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .put(`/api/animals/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         name: 'Milo actualizado',
         age: 3,
@@ -136,6 +150,7 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
   });
 
   it('should delete an animal (DELETE /api/animals/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.animal.create({
       data: {
         name: 'Bobby',
@@ -143,7 +158,9 @@ describe('Animals E2E Tests', { concurrent: false }, () => {
       }
     });
 
-    const res = await request(app).delete(`/api/animals/${created.id}`);
+    const res = await request(app)
+      .delete(`/api/animals/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Animal eliminado correctamente');

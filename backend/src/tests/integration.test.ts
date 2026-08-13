@@ -1,6 +1,14 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import jwt from "jsonwebtoken";
 import app from "../app.js";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 describe("pruebas de integración del backend migrado", () => {
   it("devuelve el health check y el listado de recursos principales", async () => {
@@ -26,12 +34,16 @@ describe("pruebas de integración del backend migrado", () => {
   });
 
   it("crea un animal y una adopción relacionados", async () => {
-    const animal = await request(app).post("/api/animals").send({
-      name: "Nube",
-      species: "Perro",
-      age: 4,
-      description: "Animal creado en prueba de integración",
-    });
+    const adminToken = buildAdminToken();
+    const animal = await request(app)
+      .post("/api/animals")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Nube",
+        species: "Perro",
+        age: 4,
+        description: "Animal creado en prueba de integración",
+      });
 
     expect(animal.status).toBe(201);
     expect(animal.body).toMatchObject({ name: "Nube", species: "Perro" });

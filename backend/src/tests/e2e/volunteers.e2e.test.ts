@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../../app.ts';
 import { resetDb } from './setup/resetDb.ts';
 import { prisma } from '../../services/prisma.ts';
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: 'admin', email: 'admin@protectora.com' },
+    process.env.JWT_SECRET || 'change-me-in-production',
+    { issuer: 'protectora-backend', audience: 'protectora-admin' }
+  );
 
 console.log('DB usada por tests:', process.env.DATABASE_URL);
 
@@ -81,6 +89,7 @@ describe('Volunteers E2E Tests', { concurrent: false }, () => {
   });
 
   it('should update a volunteer (PUT /api/volunteers/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.voluntario.create({
       data: {
         nombre: 'David',
@@ -96,6 +105,7 @@ describe('Volunteers E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .put(`/api/volunteers/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateData);
 
     expect(res.status).toBe(200);
@@ -111,6 +121,7 @@ describe('Volunteers E2E Tests', { concurrent: false }, () => {
   });
 
   it('should delete a volunteer (DELETE /api/volunteers/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.voluntario.create({
       data: {
         nombre: 'Luis',
@@ -118,7 +129,9 @@ describe('Volunteers E2E Tests', { concurrent: false }, () => {
       }
     });
 
-    const res = await request(app).delete(`/api/volunteers/${created.id}`);
+    const res = await request(app)
+      .delete(`/api/volunteers/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Voluntario eliminado correctamente');

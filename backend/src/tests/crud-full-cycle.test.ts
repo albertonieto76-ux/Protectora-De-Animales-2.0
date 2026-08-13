@@ -1,15 +1,27 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
+import jwt from "jsonwebtoken";
 import app from "../app.js";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 describe("ciclo completo CRUD de adopciones", () => {
   it("crea, actualiza y elimina una adopción", async () => {
-    const animalResponse = await request(app).post("/api/animals").send({
-      name: "Milo",
-      species: "Gato",
-      age: 2,
-      description: "Animal para prueba de ciclo CRUD",
-    });
+    const adminToken = buildAdminToken();
+    const animalResponse = await request(app)
+      .post("/api/animals")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Milo",
+        species: "Gato",
+        age: 2,
+        description: "Animal para prueba de ciclo CRUD",
+      });
 
     expect(animalResponse.status).toBe(201);
 
@@ -25,10 +37,13 @@ describe("ciclo completo CRUD de adopciones", () => {
     expect(createResponse.status).toBe(201);
     const adoptionId = createResponse.body.id;
 
-    const updateResponse = await request(app).put(`/api/adoptions/${adoptionId}`).send({
-      estado: "aceptada",
-      mensaje: "Actualizada por prueba",
-    });
+    const updateResponse = await request(app)
+      .put(`/api/adoptions/${adoptionId}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        estado: "aceptada",
+        mensaje: "Actualizada por prueba",
+      });
 
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body).toMatchObject({
@@ -36,7 +51,9 @@ describe("ciclo completo CRUD de adopciones", () => {
       estado: "aceptada",
     });
 
-    const deleteResponse = await request(app).delete(`/api/adoptions/${adoptionId}`);
+    const deleteResponse = await request(app)
+      .delete(`/api/adoptions/${adoptionId}`)
+      .set("Authorization", `Bearer ${adminToken}`);
 
     expect(deleteResponse.status).toBe(200);
   });

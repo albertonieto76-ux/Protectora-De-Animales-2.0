@@ -37,23 +37,47 @@ CORS_ORIGINS=http://localhost:5173
 VITE_API_URL=http://localhost:4000/api
 ```
 
-## 0) Instalación desde cero
+## 0) Pruebas automáticas (dejando todo arriba)
 
-Si quieres preparar el proyecto completo con un solo comando según tu sistema operativo:
+Si quieres lanzar pruebas automáticas mientras backend y frontend siguen levantados para revisar todo en vivo:
 
-- Windows PowerShell:
-
-```powershell
-./scripts/install-project.ps1
-```
-
-- Linux, macOS o Git Bash:
+1. Terminal 1 (backend):
 
 ```bash
-./scripts/install-project.sh
+npm run dev:backend
 ```
 
-Estos scripts instalan dependencias, crean `.env` si no existe, generan Prisma y aplican el esquema de base de datos.
+2. Terminal 2 (frontend):
+
+```bash
+npm run dev:frontend
+```
+
+3. Terminal 3 (pruebas backend):
+
+```bash
+npm --prefix backend run test:unit
+npm --prefix backend run test:integration
+```
+
+4. Terminal 4 (pruebas frontend):
+
+```bash
+npm --prefix frontend run test
+```
+
+Si prefieres ejecutar todo en modo no interactivo desde una sola terminal:
+
+```bash
+npm --prefix backend run test
+npm --prefix frontend run test
+```
+
+Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos extra de auth/datos):
+
+```bash
+npm --prefix backend run test:e2e
+```
 
 ## 1) Instalación para desarrollo con npm
 
@@ -82,10 +106,13 @@ Si quieres crear el administrador inicial:
 npm --prefix backend exec tsx backend/scripts/seedAdmin.ts
 ```
 
-En Windows PowerShell, usa esta variante para evitar bloqueos de `npm.ps1`:
+Si quieres rellenar la base de datos con datos de prueba (animales, eventos, voluntariado, etc.):
 
 ```bash
-npm.cmd run seed:admin
+npm --prefix backend run seed:load-test
+```
+
+
 ```
 
 Credenciales por defecto:

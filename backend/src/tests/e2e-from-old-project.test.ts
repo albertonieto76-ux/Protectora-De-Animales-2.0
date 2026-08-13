@@ -1,7 +1,15 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../app.js";
 import { prisma } from "../config/prisma.js";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 describe("pruebas e2e adaptadas del proyecto anterior", () => {
   beforeEach(async () => {
@@ -18,6 +26,7 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
   });
 
   it("crea y recupera un animal completo", async () => {
+    const adminToken = buildAdminToken();
     const animalData = {
       name: "Luna",
       species: "Perro",
@@ -26,7 +35,10 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
       images: ["https://example.com/luna.jpg"],
     };
 
-    const res = await request(app).post("/api/animals").send(animalData);
+    const res = await request(app)
+      .post("/api/animals")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(animalData);
 
     expect(res.status).toBe(201);
     expect(res.body).toHaveProperty("id");
@@ -71,6 +83,7 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
   });
 
   it("crea, consulta y elimina un evento", async () => {
+    const adminToken = buildAdminToken();
     const eventData = {
       titulo: "Feria de Adopción",
       descripcion: "Ven a conocer a nuestros peludos",
@@ -78,14 +91,19 @@ describe("pruebas e2e adaptadas del proyecto anterior", () => {
       lugar: "Parque Central",
     };
 
-    const created = await request(app).post("/api/events").send(eventData);
+    const created = await request(app)
+      .post("/api/events")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(eventData);
     expect(created.status).toBe(201);
 
     const read = await request(app).get(`/api/events/${created.body.id}`);
     expect(read.status).toBe(200);
     expect(read.body.titulo).toBe(eventData.titulo);
 
-    const deleted = await request(app).delete(`/api/events/${created.body.id}`);
+    const deleted = await request(app)
+      .delete(`/api/events/${created.body.id}`)
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(deleted.status).toBe(200);
   });
 

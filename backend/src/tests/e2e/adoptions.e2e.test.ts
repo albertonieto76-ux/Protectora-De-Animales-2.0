@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../../app.ts';
 import { resetDb } from './setup/resetDb.ts';
 import { prisma } from '../../services/prisma.ts';
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: 'admin', email: 'admin@protectora.com' },
+    process.env.JWT_SECRET || 'change-me-in-production',
+    { issuer: 'protectora-backend', audience: 'protectora-admin' }
+  );
 
 describe('Adoptions E2E Tests', { concurrent: false }, () => {
   beforeEach(async () => {
@@ -100,6 +108,7 @@ describe('Adoptions E2E Tests', { concurrent: false }, () => {
   });
 
   it('should update an adoption request (PUT /adoptions/:id)', async () => {
+    const adminToken = buildAdminToken();
     const animal = await prisma.animal.create({
       data: { name: 'Kira', species: 'Perro' }
     });
@@ -120,6 +129,7 @@ describe('Adoptions E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .put(`/api/adoptions/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateData);
 
     expect(res.status).toBe(200);
@@ -135,6 +145,7 @@ describe('Adoptions E2E Tests', { concurrent: false }, () => {
   });
 
   it('should delete an adoption request (DELETE /adoptions/:id)', async () => {
+    const adminToken = buildAdminToken();
     const animal = await prisma.animal.create({
       data: { name: 'Kira', species: 'Perro' }
     });
@@ -147,7 +158,9 @@ describe('Adoptions E2E Tests', { concurrent: false }, () => {
       }
     });
 
-    const res = await request(app).delete(`/api/adoptions/${created.id}`);
+    const res = await request(app)
+      .delete(`/api/adoptions/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Adopción eliminada correctamente');

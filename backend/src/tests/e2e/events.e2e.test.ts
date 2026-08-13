@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../../app.ts';
 import { resetDb } from './setup/resetDb.ts';
 import { prisma } from '../../services/prisma.ts';
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: 'admin', email: 'admin@protectora.com' },
+    process.env.JWT_SECRET || 'change-me-in-production',
+    { issuer: 'protectora-backend', audience: 'protectora-admin' }
+  );
 
 describe('Events E2E Tests', { concurrent: false }, () => {
   beforeEach(async () => {
@@ -14,6 +22,7 @@ describe('Events E2E Tests', { concurrent: false }, () => {
   });
 
   it('should create an event (POST /api/events)', async () => {
+    const adminToken = buildAdminToken();
     const eventData = {
       titulo: 'Feria de Adopción de Verano',
       descripcion: 'Ven a conocer a nuestros peludos listos para ser adoptados.',
@@ -23,6 +32,7 @@ describe('Events E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .post('/api/events')
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(eventData);
 
     expect(res.status).toBe(201);
@@ -78,6 +88,7 @@ describe('Events E2E Tests', { concurrent: false }, () => {
   });
 
   it('should update an event (PUT /api/events/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.evento.create({
       data: {
         titulo: 'Charla Educativa',
@@ -93,6 +104,7 @@ describe('Events E2E Tests', { concurrent: false }, () => {
 
     const res = await request(app)
       .put(`/api/events/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send(updateData);
 
     expect(res.status).toBe(200);
@@ -108,6 +120,7 @@ describe('Events E2E Tests', { concurrent: false }, () => {
   });
 
   it('should delete an event (DELETE /api/events/:id)', async () => {
+    const adminToken = buildAdminToken();
     const created = await prisma.evento.create({
       data: {
         titulo: 'Evento Temporal',
@@ -115,7 +128,9 @@ describe('Events E2E Tests', { concurrent: false }, () => {
       }
     });
 
-    const res = await request(app).delete(`/api/events/${created.id}`);
+    const res = await request(app)
+      .delete(`/api/events/${created.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Evento eliminado correctamente');

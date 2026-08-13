@@ -1,8 +1,16 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../../app.ts';
 import { prisma } from '../../services/prisma.ts';
 import { resetDb } from './setup/resetDb.ts';
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: 'admin', email: 'admin@protectora.com' },
+    process.env.JWT_SECRET || 'change-me-in-production',
+    { issuer: 'protectora-backend', audience: 'protectora-admin' }
+  );
 
 describe('Volunteer appointments E2E Tests', { concurrent: false }, () => {
   beforeEach(async () => {
@@ -14,6 +22,7 @@ describe('Volunteer appointments E2E Tests', { concurrent: false }, () => {
   });
 
   it('creates, lists, updates and deletes a volunteer appointment', async () => {
+    const adminToken = buildAdminToken();
     const volunteer = await prisma.voluntario.create({
       data: {
         nombre: 'Lucia',
@@ -45,6 +54,7 @@ describe('Volunteer appointments E2E Tests', { concurrent: false }, () => {
 
     const updateRes = await request(app)
       .put(`/api/volunteers/appointments/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
       .send({
         voluntarioId: volunteer.id,
         inicio: '2026-08-20T10:00:00.000Z',
@@ -57,7 +67,9 @@ describe('Volunteer appointments E2E Tests', { concurrent: false }, () => {
     expect(updateRes.body.estado).toBe('pendiente');
     expect(updateRes.body.notas).toContain('pendiente');
 
-    const deleteRes = await request(app).delete(`/api/volunteers/appointments/${createRes.body.id}`);
+    const deleteRes = await request(app)
+      .delete(`/api/volunteers/appointments/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
 
     expect(deleteRes.status).toBe(200);
     expect(deleteRes.body.message).toBe('Cita de voluntariado eliminada correctamente');

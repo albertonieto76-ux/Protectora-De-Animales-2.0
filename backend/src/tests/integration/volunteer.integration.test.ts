@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import express from "express";
+import jwt from "jsonwebtoken";
 
 // Mock prisma BEFORE importing routes
 import { prismaMock } from "./prisma.mock.ts";
@@ -11,6 +12,13 @@ vi.mock("../../config/prisma.ts", () => ({
 
 // Import route after mocking
 import volunteerRoutes from "../../routes/volunteers.routes.ts";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 const app = express();
 app.use(express.json());
@@ -55,6 +63,7 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
 
 
   it("PUT /volunteers/:id actualiza un voluntario", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.voluntario.update.mockResolvedValue({
       id: 1,
       nombre: "Ana actualizada"
@@ -62,6 +71,7 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
 
     const res = await request(app)
       .put("/volunteers/1")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ nombre: "Ana actualizada" });
 
     expect(res.status).toBe(200);
@@ -72,15 +82,19 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
   });
 
   it("DELETE /volunteers/:id elimina un voluntario", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.voluntario.delete.mockResolvedValue({});
 
-    const res = await request(app).delete("/volunteers/1");
+    const res = await request(app)
+      .delete("/volunteers/1")
+      .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ message: "Voluntario eliminado correctamente" });
   });
 
   it("CRUD /volunteers/appointments gestiona citas de voluntariado", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.citaVoluntariado.create.mockResolvedValue({
       id: 10,
       voluntarioId: 1,
@@ -149,6 +163,7 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
 
     const updateRes = await request(app)
       .put('/volunteers/appointments/10')
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({
         voluntarioId: 1,
         inicio: '2026-08-20T10:00:00.000Z',
@@ -160,7 +175,9 @@ it("GET /volunteers devuelve lista de voluntarios", async () => {
     expect(updateRes.status).toBe(200);
     expect(updateRes.body.estado).toBe('pendiente');
 
-    const deleteRes = await request(app).delete('/volunteers/appointments/10');
+    const deleteRes = await request(app)
+      .delete('/volunteers/appointments/10')
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(deleteRes.status).toBe(200);
     expect(deleteRes.body).toEqual({ message: 'Cita de voluntariado eliminada correctamente' });
   });

@@ -13,9 +13,10 @@
     "images:migrate-to-db": "tsx scripts/migrateImagesToDb.ts",
     "images:migrate-to-db:clean": "tsx scripts/migrateImagesToDb.ts --clean",
     "seed:load-test": "tsx scripts/seedLoadTestData.ts",
-    "test": "vitest --config src/vitest.config.ts",
-    "test:unit": "vitest --config src/vitest.config.ts --run src/tests/unit",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest --config src/vitest.config.ts --run src/tests --exclude src/tests/integration/** --exclude src/tests/e2e/** --exclude src/tests/e2e-from-old-project.test.ts --exclude src/tests/integration-from-old-project.test.ts --exclude src/tests/integration.test.ts",
     "test:integration": "vitest --config src/vitest.config.ts --run src/tests/integration",
+    "test:e2e": "vitest --config src/vitest.config.ts --run src/tests/e2e src/tests/e2e-from-old-project.test.ts",
     "coverage": "vitest --config src/vitest.config.ts run --coverage"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import express from "express";
+import jwt from "jsonwebtoken";
 
 // Mock prisma BEFORE importing routes
 import { prismaMock } from "./prisma.mock.ts";
@@ -11,6 +12,13 @@ vi.mock("../../config/prisma.ts", () => ({
 
 // Import route after mocking
 import eventRoutes from "../../routes/events.routes.ts";
+
+const buildAdminToken = () =>
+  jwt.sign(
+    { sub: 1, role: "admin", email: "admin@protectora.com" },
+    process.env.JWT_SECRET || "change-me-in-production",
+    { issuer: "protectora-backend", audience: "protectora-admin" }
+  );
 
 // Crear app Express para pruebas
 const app = express();
@@ -56,6 +64,7 @@ describe("Eventos - Tests de integración", () => {
   });
 
   it("POST /events crea un evento", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.evento.create.mockResolvedValue({
       id: 1,
       titulo: "Nuevo evento",
@@ -64,6 +73,7 @@ describe("Eventos - Tests de integración", () => {
 
     const res = await request(app)
       .post("/events")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ titulo: "Nuevo evento", fecha: "2024-07-01" });
 
     expect(res.status).toBe(201);
@@ -75,6 +85,7 @@ describe("Eventos - Tests de integración", () => {
   });
 
   it("PUT /events/:id actualiza un evento", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.evento.update.mockResolvedValue({
       id: 1,
       titulo: "Evento actualizado",
@@ -83,6 +94,7 @@ describe("Eventos - Tests de integración", () => {
 
     const res = await request(app)
       .put("/events/1")
+      .set("Authorization", `Bearer ${adminToken}`)
       .send({ titulo: "Evento actualizado" });
 
     expect(res.status).toBe(200);
@@ -94,9 +106,12 @@ describe("Eventos - Tests de integración", () => {
   });
 
   it("DELETE /events/:id elimina un evento", async () => {
+    const adminToken = buildAdminToken();
     prismaMock.evento.delete.mockResolvedValue({});
 
-    const res = await request(app).delete("/events/1");
+    const res = await request(app)
+      .delete("/events/1")
+      .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({

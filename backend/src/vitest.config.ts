@@ -5,7 +5,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
 
@@ -20,7 +20,7 @@ export default defineConfig({
     },
 
     env: {
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/protectora?schema=public"
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public"
     },
 
     setupFiles: ['./src/tests/setup.ts',
