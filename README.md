@@ -1,8 +1,8 @@
-# Protectora de Animales 2.0
+## a. Descripción general del proyecto.
 
 Aplicación full-stack para gestionar una protectora de animales con experiencia pública para adopciones, voluntariado, eventos y donaciones, y un panel administrativo para gestionar contenido y operaciones internas.
 
-## Stack
+## b. Stack tecnológico utilizado.
 
 - Frontend: React + Vite
 - Backend: Node.js + Express + TypeScript
@@ -16,6 +16,9 @@ Aplicación full-stack para gestionar una protectora de animales con experiencia
 - PostgreSQL 16+ disponible localmente o con Docker
 - Docker Desktop activo si vas a usar contenedores
 - Git
+
+
+## c. Información sobre su instalación y ejecución.
 
 ## Variables de entorno
 
@@ -33,50 +36,8 @@ PORT=4000
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/protectora?schema=public
 JWT_SECRET=tu_secreto_muy_largo
 MFA_ENCRYPTION_KEY=otra_clave_muy_larga
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=http://localhost:5173,http://localhost:8080
 VITE_API_URL=http://localhost:4000/api
-```
-
-## 0) Pruebas automáticas (dejando todo arriba)
-
-Si quieres lanzar pruebas automáticas mientras backend y frontend siguen levantados para revisar todo en vivo:
-
-1. Terminal 1 (backend):
-
-```bash
-npm run dev:backend
-```
-
-2. Terminal 2 (frontend):
-
-```bash
-npm run dev:frontend
-```
-
-3. Terminal 3 (pruebas backend):
-
-```bash
-npm --prefix backend run test:unit
-npm --prefix backend run test:integration
-```
-
-4. Terminal 4 (pruebas frontend):
-
-```bash
-npm --prefix frontend run test
-```
-
-Si prefieres ejecutar todo en modo no interactivo desde una sola terminal:
-
-```bash
-npm --prefix backend run test
-npm --prefix frontend run test
-```
-
-Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos extra de auth/datos):
-
-```bash
-npm --prefix backend run test:e2e
 ```
 
 ## 1) Instalación para desarrollo con npm
@@ -112,122 +73,83 @@ Si quieres rellenar la base de datos con datos de prueba (animales, eventos, vol
 npm --prefix backend run seed:load-test
 ```
 
+En Windows PowerShell, usa estas variantes si `npm.ps1` está bloqueado:
 
+```bash
+npm.cmd --prefix backend run seed:admin
+npm.cmd --prefix backend run seed:load-test
 ```
 
 Credenciales por defecto:
 - Email: `admin@protectora.com`
 - Contraseña: `Admin1234!`
 
-Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
+Nota: el seed del administrador ahora deja siempre activa esa contraseña por defecto, salvo que pases `ADMIN_PASSWORD`.
 
-### 1.3. Arrancar backend y frontend
+## 2) Pruebas automáticas (con todo arriba)
 
-Desde la raíz del proyecto:
-
-```bash
-npm run dev:backend
-```
-
-En otra terminal:
+Si quieres lanzar pruebas automáticas mientras backend y frontend siguen levantados para revisar todo en vivo:
+3. Terminal 3 (pruebas backend):
 
 ```bash
-npm run dev:frontend
+npm --prefix backend run test:unit
+npm --prefix backend run test:integration
 ```
 
-URLs:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:4000/api
-- Panel admin: http://localhost:5173/admin/login
-
----
-
-## 2) Instalación para producción con npm
-
-Esta opción es para desplegar la app sin Docker, usando Node para el backend y un servidor estático para el frontend compilado.
-
-### 2.1. Instalar dependencias
+4. Terminal 4 (pruebas frontend):
 
 ```bash
-npm install
-npm --prefix backend install
-npm --prefix frontend install
+npm --prefix frontend run test
 ```
 
-### 2.2. Preparar entorno de producción
+Si prefieres ejecutar todo en modo no interactivo desde una sola terminal:
 
-Crea un `.env` con valores de producción, por ejemplo:
+```bash
+npm --prefix backend run test
+npm --prefix frontend run test
+```
+
+Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos extra de auth/datos):
+
+```bash
+npm --prefix backend run test:e2e
+```
+
+## 2) Instalación con Docker
+
+Antes de levantar contenedores, crea el archivo `.env` en la raíz del proyecto:
+
+```bash
+copy .env.example .env
+```
+
+Ese archivo debe contener al menos estas variables para Docker en producción:
 
 ```env
-NODE_ENV=production
-PORT=4000
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/protectora?schema=public
-JWT_SECRET=un_secreto_largo_y_seguro
-MFA_ENCRYPTION_KEY=otra_clave_larga_y_segura
-CORS_ORIGINS=http://localhost:4173
-VITE_API_URL=http://localhost:4000/api
+JWT_SECRET=replace-with-a-long-random-secret
+MFA_ENCRYPTION_KEY=replace-with-a-long-random-secret
+POSTGRES_DB=protectora
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres825j
+CORS_ORIGINS=http://localhost:5173,http://localhost:8080
 ```
-
-### 2.3. Generar schema de Prisma y aplicar migraciones
-
-```bash
-npm --prefix backend exec prisma generate
-npm --prefix backend exec prisma migrate deploy
-```
-
-### 2.4. Arrancar el backend en producción
-
-```bash
-NODE_ENV=production PORT=4000 JWT_SECRET=tu_secreto MFA_ENCRYPTION_KEY=tu_clave CORS_ORIGINS=http://localhost:4173 npm --prefix backend exec tsx src/server.ts
-```
-
-### 2.5. Compilar y servir el frontend
-
-```bash
-npm --prefix frontend run build
-npm --prefix frontend run preview -- --host 0.0.0.0 --port 4173
-```
-
-Esto genera el build estático en `frontend/dist` y lo sirve con Vite Preview.
-
-> Si necesitas una puesta en producción real, lo recomendable es servir ese build con Nginx o Apache, pero la secuencia anterior es la válida para una ejecución con npm sin Docker.
-
-URLs esperadas:
-- Frontend: http://localhost:4173
-- Backend API: http://localhost:4000/api
-
----
-
-## 3) Instalación con Docker
-
-Hay dos configuraciones disponibles: desarrollo y producción.
-
-### 3.1. Desarrollo con Docker
-
-```bash
-docker compose -f docker/docker-compose.yml up -d --build
-```
-
-Para parar:
-
-```bash
-docker compose -f docker/docker-compose.yml down
-```
-
-URLs:
-- Frontend: http://localhost:5173
-- Panel admin: http://localhost:5173/admin/login
-	Email: `admin@protectora.com`
-	Contraseña: `Admin1234!`
-Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
-
-- Backend API: http://localhost:4000/api
-- Base de datos: localhost:5432
-
-### 3.2. Producción con Docker
 
 ```bash
 docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
+```
+
+Si quieres crear el administrador inicial dentro del contenedor backend:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedAdmin.ts
+```
+Ese comando también restablece la contraseña del admin a `Admin1234!`, salvo que definas `ADMIN_PASSWORD`.
+Nota: puedes volver a ejecutar el seed del admin para restablecer esa contraseña en cualquier momento.
+
+Si quieres rellenar la base de datos con datos de prueba dentro del contenedor backend:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedLoadTestData.ts
 ```
 
 Para parar:
@@ -236,11 +158,18 @@ Para parar:
 docker compose --env-file .env -f docker/docker-compose.prod.yml down
 ```
 
-URLs esperadas:
-- Frontend: http://localhost:8080
-- Backend API: http://localhost:4000/api
+URLs:
 
----
+- Frontend: http://localhost:8080
+- Panel admin: http://localhost:8080/admin/login
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
+
+- Backend API: http://localhost:4000/api
+- Base de datos: localhost:5432
+
+
 
 ## Verificación funcional
 
@@ -251,7 +180,44 @@ Se han validado estos puntos con ejecución real:
 - El frontend queda disponible en `http://localhost:5173` en desarrollo y en `http://localhost:8080` en producción Docker.
 - El endpoint `/api/events` responde correctamente tras sincronizar el esquema Prisma con la base de datos.
 
-## Estructura principal
+### 2.1. Tests del backend contra Docker (recomendado en Windows)
+
+Si tienes PostgreSQL local instalado en Windows, `localhost:5432` puede apuntar a tu servicio local en lugar de la BD Docker, y los tests pueden fallar con `P1003`.
+
+Flujo recomendado para ejecutar tests realmente contra Docker:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d db backend
+docker exec protectora-backend npm install
+docker exec protectora-backend npm run test:docker
+```
+
+Notas:
+- `test:docker:smoke` valida conectividad real del contenedor (health + `/api/events`).
+- `test:docker` ejecuta primero smoke y luego la suite normal (`test`).
+
+Comandos de ejecucion (resumen rapido):
+
+```bash
+# 1) Levantar solo BD y backend de desarrollo
+docker compose -f docker/docker-compose.yml up -d db backend
+
+# 2) Instalar dependencias dentro del contenedor backend (primera vez o tras cambios)
+docker exec protectora-backend npm install
+
+# 3) Smoke rapido de Docker (conectividad real)
+docker exec protectora-backend npm run test:docker:smoke
+
+# 4) Suite completa docker-friendly (smoke + unit + integration)
+docker exec protectora-backend npm run test:docker
+```
+
+Equivalencias:
+- `test:docker:smoke` -> solo pruebas de conectividad en `src/tests/docker`.
+- `test:docker` -> equivale a `test:docker:smoke` + `npm run test`.
+- `npm run test` -> `test:unit` + `test:integration`.
+
+## d. Estructura del proyecto.
 
 - `frontend/`: aplicación React
 - `backend/`: API Express + Prisma
@@ -259,15 +225,73 @@ Se han validado estos puntos con ejecución real:
 - `docker/`: configuración de Docker
 - `docs/`: documentación del proyecto
 
-## Panel administrativo
+## TROUBLESHOOTING DE DOCKERS:
 
-Acceso:
+## 0) Instalación limpia recomendada
 
-```text
-http://localhost:5173/admin/login
+Si vienes de un clon nuevo, o si Docker ya había levantado una base de datos antigua y aparecen errores de Prisma como `P2021`, `P2022` o columnas/tablas que no existen, usa esta secuencia completa.
+
+### 0.1. Instalación limpia con Docker
+
+Este flujo borra los volúmenes de Docker de este proyecto y recrea la base de datos desde cero.
+
+```bash
+copy .env.example .env
+docker compose --env-file .env -f docker/docker-compose.prod.yml down -v --remove-orphans
+docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx prisma migrate deploy
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedAdmin.ts
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedLoadTestData.ts
 ```
 
-## Notas
+Qué hace cada paso:
+- crea el archivo `.env` si todavía no existe
+- elimina contenedores y volúmenes anteriores del proyecto
+- reconstruye backend y frontend con la versión correcta de Node
+- aplica todas las migraciones de Prisma
+- crea el usuario administrador
+- carga datos de prueba
+
+Credenciales por defecto del admin:
+- Email: `admin@protectora.com`
+- Contraseña: `Admin1234!`
+
+URLs tras el arranque:
+- Frontend: http://localhost:8080
+- Panel admin: http://localhost:8080/admin/login
+- Backend API: http://localhost:4000/api
+
+### 0.2. Limpieza rápida sin borrar datos locales de npm
+
+Si el problema está solo en Docker, no hace falta reinstalar dependencias con npm. Normalmente basta con:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.prod.yml down -v --remove-orphans
+docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
+docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx prisma migrate deploy
+```
+
+### Diagnostico rapido (si "esta manana funcionaba")
+
+Si tras un reset el panel admin en `http://localhost:8080/admin/login` falla (por ejemplo, `500` en `POST /api/auth/login`), revisa CORS primero.
+
+Comprobacion minima:
+
+```bash
+docker logs protectora-backend-prod --tail 80
+```
+
+Si aparece `Origen no permitido por CORS`, usa ambos origenes en `.env`:
+
+```env
+CORS_ORIGINS=http://localhost:5173,http://localhost:8080
+```
+
+Aplica cambio recreando backend:
+
+```bash
+docker compose --env-file .env -f docker/docker-compose.prod.yml up -d --force-recreate backend
+```
 
 - La instalación con npm es la recomendada para desarrollo y pruebas locales.
 - La instalación con npm también sirve para poner en producción sin Docker.
@@ -275,3 +299,32 @@ http://localhost:5173/admin/login
 - En Docker, el backend apunta a la base de datos con host `db`.
 - No se deben compartir archivos `.env` ni credenciales reales en repositorios públicos.
 
+## e. Funcionalidades principales.
+
+Es una pagina que tiene 2 partes:
+- Administración:
+    -   Dashboard general del funcionamiento del día a día
+	-	Alta de animales.
+	-   Gestión de adopciones.
+	-	Gestión de Voluntarios.
+	-	Gestión de Donnaciones.
+	-	Gestión de Eventos.
+	-	Visualización de eventos de la página.
+- Acciones de Usuario:ç
+	-	Adopciones.
+	-	Suscripción a eventos.
+	-	Donaciones
+	-	Sucripción a voluntariado.
+
+## f. Usuario y contraseña de prueba
+   Para la parte de administración de la página:
+   Postgres en local:
+	Panel admin: http://localhost:5173/admin/login
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+   Docker:
+    Panel admin: http://localhost:8080/admin/login
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+
+   

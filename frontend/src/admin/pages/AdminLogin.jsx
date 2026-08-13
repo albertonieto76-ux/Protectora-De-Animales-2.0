@@ -11,6 +11,12 @@ const getCookie = (name) => {
   return decodeURIComponent(cookieValue.split("=").slice(1).join("="));
 };
 
+const storeAdminToken = (token) => {
+  if (token && typeof window !== "undefined") {
+    window.sessionStorage.setItem("admin_token", token);
+  }
+};
+
 const EyeIcon = ({ crossed = false }) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path
@@ -84,14 +90,7 @@ export function AdminLogin() {
       if (data.csrfToken) {
         window.sessionStorage.setItem("csrf_token", data.csrfToken);
       }
-      if (document.cookie.includes("admin_token=")) {
-        const adminToken = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("admin_token="));
-        if (adminToken) {
-          window.sessionStorage.setItem("admin_token", decodeURIComponent(adminToken.split("=").slice(1).join("=")));
-        }
-      }
+      storeAdminToken(data.token);
 
       window.location.assign("/admin/dashboard");
       return;

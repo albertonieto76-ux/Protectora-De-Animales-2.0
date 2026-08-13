@@ -3,6 +3,11 @@ import { Navigate } from "react-router-dom";
 
 const AUTH_API_BASE = import.meta.env.VITE_API_URL || "/api";
 
+const getStoredAdminToken = () => {
+  if (typeof window === "undefined") return "";
+  return window.sessionStorage.getItem("admin_token") || "";
+};
+
 export function ProtectedAdminRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
@@ -12,6 +17,9 @@ export function ProtectedAdminRoute({ children }) {
     fetch(`${AUTH_API_BASE}/auth/me`, {
       credentials: "include",
       method: "GET",
+      headers: getStoredAdminToken()
+        ? { Authorization: `Bearer ${getStoredAdminToken()}` }
+        : undefined,
     })
       .then(async (res) => {
         if (!mounted) return;

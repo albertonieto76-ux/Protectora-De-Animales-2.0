@@ -3,7 +3,7 @@ import { prisma } from "../src/services/prisma.js";
 
 async function main() {
   const email = process.env.ADMIN_EMAIL || "admin@protectora.com";
-  const password = process.env.ADMIN_PASSWORD || "Admin123!";
+  const password = process.env.ADMIN_PASSWORD || "Admin1234!";
 
   const hashedPassword = await bcrypt.hash(password, 12);
   await prisma.usuario.upsert({

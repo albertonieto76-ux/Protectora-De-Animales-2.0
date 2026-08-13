@@ -14,9 +14,11 @@
     "images:migrate-to-db:clean": "tsx scripts/migrateImagesToDb.ts --clean",
     "seed:load-test": "tsx scripts/seedLoadTestData.ts",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "vitest --config src/vitest.config.ts --run src/tests --exclude src/tests/integration/** --exclude src/tests/e2e/** --exclude src/tests/e2e-from-old-project.test.ts --exclude src/tests/integration-from-old-project.test.ts --exclude src/tests/integration.test.ts",
+    "test:unit": "vitest --config src/vitest.config.ts --run src/tests --exclude \"src/tests/integration/**\" --exclude \"src/tests/e2e/**\" --exclude \"src/tests/e2e-from-old-project.test.ts\" --exclude \"src/tests/integration-from-old-project.test.ts\" --exclude \"src/tests/integration.test.ts\"",
     "test:integration": "vitest --config src/vitest.config.ts --run src/tests/integration",
     "test:e2e": "vitest --config src/vitest.config.ts --run src/tests/e2e src/tests/e2e-from-old-project.test.ts",
+    "test:docker:smoke": "vitest --config src/vitest.config.ts --run src/tests/docker",
+    "test:docker": "npm run test:docker:smoke && npm run test",
     "coverage": "vitest --config src/vitest.config.ts run --coverage"
   },
   "dependencies": {
@@ -38,8 +40,10 @@
     "@types/jsonwebtoken": "^9.0.1",
     "@types/multer": "^2.2.0",
     "@types/node": "^20.19.43",
+    "@types/supertest": "^6.0.3",
     "nodemon": "^3.1.14",
     "prisma": "^7.9.1",
+    "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.7",
     "typescript": "^5.4.5",

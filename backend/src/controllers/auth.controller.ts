@@ -63,7 +63,7 @@ const issueAdminSession = (res: Response, user: { id: number; role: string; emai
   res.cookie("admin_token", token, cookieOptions);
   res.cookie("csrf_token", csrfToken, csrfCookieOptions);
 
-  return csrfToken;
+  return { token, csrfToken };
 };
 
 export const loginAdmin = async (req: Request, res: Response) => {
@@ -110,7 +110,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
     }
 
     clearLoginFailures(rateLimitKey);
-    const csrfToken = issueAdminSession(res, { id: user.id, role: user.role, email: user.email });
+    const { token, csrfToken } = issueAdminSession(res, { id: user.id, role: user.role, email: user.email });
     await auditLog({
       action: "ADMIN_LOGIN_SUCCESS",
       success: true,
@@ -122,7 +122,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
       userAgent: req.header("user-agent") || null,
     });
 
-    return res.json({ ok: true, message: "Inicio de sesión correcto", csrfToken });
+    return res.json({ ok: true, message: "Inicio de sesión correcto", csrfToken, token });
   } catch (error) {
     console.error("Error en login admin:", error);
     await auditFromRequest(req, { action: "ADMIN_LOGIN_FAILED", success: false, reason: "server_error" });

@@ -7,15 +7,17 @@ async function main() {
 
   const existing = await prisma.usuario.findUnique({ where: { email } });
 
-  if (existing) {
-    console.log(`Administrador ya existente: ${email}`);
-    return;
-  }
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  await prisma.usuario.create({
-    data: {
+  await prisma.usuario.upsert({
+    where: { email },
+    update: {
+      nombre: "Administrador",
+      password: hashedPassword,
+      role: "admin",
+    },
+    create: {
       nombre: "Administrador",
       email,
       password: hashedPassword,
@@ -23,8 +25,8 @@ async function main() {
     },
   });
 
-  console.log(`Administrador creado: ${email}`);
-  console.log(`Contraseña temporal: ${password}`);
+  console.log(`Usuario administrador listo: ${email}`);
+  console.log(`Contraseña activa: ${password}`);
 }
 
 main()
