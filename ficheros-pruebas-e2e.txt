@@ -1,0 +1,12 @@
+LISTADO DE FICHEROS DE PRUEBAS E2E
+
+Backend:
+- backend/src/tests/e2e/adoptions.e2e.test.ts
+- backend/src/tests/e2e/animals.e2e.test.ts
+- backend/src/tests/e2e/events.e2e.test.ts
+- backend/src/tests/e2e/volunteer-appointments.e2e.test.ts
+- backend/src/tests/e2e/volunteers.e2e.test.ts
+
+Legacy / antiguo:
+- backend/src/tests/e2e-from-old-project.test.ts
+

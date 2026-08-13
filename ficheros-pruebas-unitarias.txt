@@ -1,0 +1,7 @@
+LISTADO DE FICHEROS DE PRUEBAS UNITARIAS
+
+Frontend:
+- frontend/src/components/DonationTypeSelector.test.jsx
+- frontend/src/components/VolunteerAvailabilitySelector.test.jsx
+- frontend/src/test/setup.js (setup de Vitest)
+
