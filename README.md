@@ -22,13 +22,19 @@ Aplicación full-stack para gestionar una protectora de animales con experiencia
 
 ## Variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto a partir del ejemplo:
+Crea un archivo `.env` en la raíz del proyecto según cómo vayas a arrancar:
+
+- Para desarrollo con npm: usa `.env.example.npm`.
+- Para despliegue/ejecución con Docker: usa `.env.example.docker`.
+
+Ejemplos de copia en Windows:
 
 ```bash
-copy .env.example .env
+copy .env.example.npm .env
+copy .env.example.docker .env
 ```
 
-Contenido mínimo recomendado:
+Contenido típico para npm (`.env.example.npm`):
 
 ```env
 NODE_ENV=development
@@ -43,6 +49,12 @@ VITE_API_URL=http://localhost:4000/api
 ## 1) Instalación para desarrollo con npm
 
 Esta opción sirve para trabajar en local con el backend y el frontend ejecutándose directamente desde Node.
+
+Primero crea el `.env` para npm:
+
+```bash
+copy .env.example.npm .env
+```
 
 ### 1.1. Instalar dependencias
 
@@ -65,20 +77,6 @@ Si quieres crear el administrador inicial:
 
 ```bash
 npm --prefix backend exec tsx backend/scripts/seedAdmin.ts
-```
-
-Si quieres rellenar la base de datos con datos de prueba (animales, eventos, voluntariado, etc.):
-
-```bash
-npm --prefix backend run seed:load-test
-```
-
-En Windows PowerShell, usa estas variantes si `npm.ps1` está bloqueado:
-
-```bash
-npm.cmd --prefix backend run seed:admin
-npm.cmd --prefix backend run seed:load-test
-```
 
 Credenciales por defecto:
 - Email: `admin@protectora.com`
@@ -86,11 +84,26 @@ Credenciales por defecto:
 
 Nota: el seed del administrador ahora deja siempre activa esa contraseña por defecto, salvo que pases `ADMIN_PASSWORD`.
 
-## 2) Pruebas automáticas (con todo arriba)
+```
+```bash
+# Terminal 1 (backend)
+npm --prefix backend run dev
+
+# Terminal 2 (frontend)
+npm --prefix frontend run dev
+```
+Si quieres rellenar la base de datos con datos de prueba (animales, eventos, voluntariado, etc.) OJO!!! LAS FOTOS SE COGEN DE INTERNET ALEATORIAMENTE, NO SE CORRESPONDE CON LO QUE REPRESENTAN (es solo prueba de carga para comprobar que se puede navegar sobre todas las funcionalidades):
+
+```bash
+npm --prefix backend run seed:load-test
+
+## 1.1) Pruebas automáticas (con todo arriba)
+
+Antes de ejecutar pruebas, levanta backend y frontend en terminales separadas:
 
 Si quieres lanzar pruebas automáticas mientras backend y frontend siguen levantados para revisar todo en vivo:
-3. Terminal 3 (pruebas backend):
 
+# Terminal 3:
 ```bash
 npm --prefix backend run test:unit
 npm --prefix backend run test:integration
@@ -120,7 +133,7 @@ npm --prefix backend run test:e2e
 Antes de levantar contenedores, crea el archivo `.env` en la raíz del proyecto:
 
 ```bash
-copy .env.example .env
+copy .env.example.docker .env
 ```
 
 Ese archivo debe contener al menos estas variables para Docker en producción:
@@ -164,7 +177,7 @@ URLs:
 - Panel admin: http://localhost:8080/admin/login
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
-Nota: si el administrador ya existe, el seed **no** actualiza su contraseña.
+Nota: si el administrador ya existe, el seed sí actualiza su contraseña; por defecto queda en `Admin1234!`, salvo que definas `ADMIN_PASSWORD`.
 
 - Backend API: http://localhost:4000/api
 - Base de datos: localhost:5432
@@ -216,6 +229,7 @@ Equivalencias:
 - `test:docker:smoke` -> solo pruebas de conectividad en `src/tests/docker`.
 - `test:docker` -> equivale a `test:docker:smoke` + `npm run test`.
 - `npm run test` -> `test:unit` + `test:integration`.
+- `test:unit` excluye `src/tests/docker/**`, por lo que no requiere backend escuchando en `localhost:4000`.
 
 ## d. Estructura del proyecto.
 
@@ -236,7 +250,7 @@ Si vienes de un clon nuevo, o si Docker ya había levantado una base de datos an
 Este flujo borra los volúmenes de Docker de este proyecto y recrea la base de datos desde cero.
 
 ```bash
-copy .env.example .env
+copy .env.example.docker .env
 docker compose --env-file .env -f docker/docker-compose.prod.yml down -v --remove-orphans
 docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
 docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx prisma migrate deploy
