@@ -38,8 +38,8 @@ const loadEnvIfAvailable = async (paths: string[]): Promise<void> => {
 };
 
 await loadEnvIfAvailable([
-  path.resolve(__dirname, 'backend', '.env'),
   path.resolve(__dirname, '.env'),
+  path.resolve(__dirname, 'backend', '.env'),
 ]);
 
 const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/protectora?schema=public";
