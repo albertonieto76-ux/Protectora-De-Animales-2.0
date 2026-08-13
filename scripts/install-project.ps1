@@ -27,6 +27,14 @@ if (-not (Test-Path .env)) {
   Copy-Item .env.example .env
 } else {
   Write-Host "[5/6] El archivo .env ya existe; se conserva."
+  $hasDatabaseUrl = Select-String -Path .env -Pattern '^DATABASE_URL=' -Quiet
+  if (-not $hasDatabaseUrl) {
+    Write-Host "[5/6] Añadiendo DATABASE_URL faltante al archivo .env..."
+    $exampleDatabaseUrl = Select-String -Path .env.example -Pattern '^DATABASE_URL=' | Select-Object -First 1
+    if ($exampleDatabaseUrl) {
+      Add-Content -Path .env -Value $exampleDatabaseUrl.Line
+    }
+  }
 }
 
 Write-Host "[6/6] Generando cliente Prisma y aplicando esquema..."

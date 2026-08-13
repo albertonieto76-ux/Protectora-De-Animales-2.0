@@ -29,6 +29,12 @@ if [ ! -f .env ]; then
   cp .env.example .env
 else
   echo "[5/6] El archivo .env ya existe; se conserva."
+  if ! grep -q '^DATABASE_URL=' .env; then
+    echo "[5/6] Añadiendo DATABASE_URL faltante al archivo .env..."
+    if grep -q '^DATABASE_URL=' .env.example; then
+      grep '^DATABASE_URL=' .env.example | head -n 1 >> .env
+    fi
+  fi
 fi
 
 echo "[6/6] Generando cliente Prisma y aplicando esquema..."
