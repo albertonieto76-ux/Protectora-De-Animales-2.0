@@ -155,7 +155,8 @@ gzip -c protectora-backup.json > protectora-backup.json.gz
 
 Importante:
 - El backend valida el contenido JSON tras descomprimir si el archivo viene en gzip.
-- Si el tamaño del backup es muy grande, el navegador puede fallar al importarlo por límites de memoria o carga del archivo.
+- Límite recomendado: JSON sin comprimir hasta 20 MB; JSON comprimido hasta 200 MB.
+- Si el tamaño del backup supera ese valor, el navegador puede fallar al importarlo por límites de memoria o carga del archivo.
 - En Docker, la validación recomendada es ejecutar la prueba desde el contenedor backend:
 
 ```bash

@@ -175,7 +175,7 @@ export const Dashboard = () => {
                 hidden
               />
             </div>
-            <p className={styles.backupWarning}>La importación sobrescribe la base de datos actual. Asegúrate de tener un backup previo. Si el JSON exportado supera un tamaño muy grande, puede no ser importable de nuevo desde el navegador.</p>
+            <p className={styles.backupWarning}>La importación sobrescribe la base de datos actual. Asegúrate de tener un backup previo. Límite recomendado: JSON sin comprimir hasta 20 MB; JSON comprimido hasta 200 MB. Si el archivo supera ese tamaño, puede no ser importable desde el navegador.</p>
             {backupStatus ? <p className={styles.backupStatus}>{backupStatus}</p> : null}
           </div>
         </section>
