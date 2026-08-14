@@ -840,7 +840,12 @@ export default function Navbar() {
           onClick={(e) => { if (e.target === e.currentTarget) setVolModalOpen(false); }}
         >
           <div className="volunteer-modal">
-            <button className="modal-close-btn" onClick={() => setVolModalOpen(false)}>✕</button>
+            <button
+              type="button"
+              className="modal-close-btn"
+              onClick={() => setVolModalOpen(false)}
+              aria-label="Cerrar formulario de voluntariado"
+            >✕</button>
 
             {volEnviado ? (
               <div className="modal-success">

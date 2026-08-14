@@ -92,10 +92,7 @@ npm --prefix backend run dev
 # Terminal 2 (frontend)
 npm --prefix frontend run dev
 ```
-Si quieres rellenar la base de datos con datos de prueba (animales, eventos, voluntariado, etc.) OJO!!! LAS FOTOS SE COGEN DE INTERNET ALEATORIAMENTE, NO SE CORRESPONDE CON LO QUE REPRESENTAN (es solo prueba de carga para comprobar que se puede navegar sobre todas las funcionalidades):
-
-```bash
-npm --prefix backend run seed:load-test
+## PRUEBAS 
 
 ## 1.1) Pruebas automáticas (con todo arriba)
 
@@ -103,13 +100,14 @@ Antes de ejecutar pruebas, levanta backend y frontend en terminales separadas:
 
 Si quieres lanzar pruebas automáticas mientras backend y frontend siguen levantados para revisar todo en vivo:
 
-# Terminal 3:
+1. Terminal 3 (pruebas backend):
+
 ```bash
 npm --prefix backend run test:unit
 npm --prefix backend run test:integration
 ```
 
-4. Terminal 4 (pruebas frontend):
+2. Terminal 4 (pruebas frontend):
 
 ```bash
 npm --prefix frontend run test
@@ -122,10 +120,56 @@ npm --prefix backend run test
 npm --prefix frontend run test
 ```
 
+Para ejecutar solo la prueba de backup/exportación de la base de datos con imágenes, usa la invocación directa de Vitest para evitar duplicar `--run`:
+
+```bash
+cd backend
+npx vitest --config src/vitest.config.ts --run src/tests/integration/admin.backup.test.ts
+```
+
 Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos extra de auth/datos):
 
 ```bash
 npm --prefix backend run test:e2e
+```
+
+### Importación de backups: JSON sin comprimir y gzip
+
+El panel de administración acepta los dos formatos de backup siguientes:
+
+1. JSON plano: `protectora-backup.json`
+2. GZIP: `protectora-backup.json.gz`
+
+Ejemplos de validación y uso:
+
+```bash
+# Caso 1: JSON plano
+# 1) Exporta el backup desde el panel admin
+# 2) Selecciona el archivo .json en "Importar BBDD"
+
+# Caso 2: JSON comprimido
+# 1) Exporta el backup y comprímelo si lo necesitas
+gzip -c protectora-backup.json > protectora-backup.json.gz
+# 2) Sube el archivo .json.gz desde el panel admin
+```
+
+Importante:
+- El backend valida el contenido JSON tras descomprimir si el archivo viene en gzip.
+- Si el tamaño del backup es muy grande, el navegador puede fallar al importarlo por límites de memoria o carga del archivo.
+- En Docker, la validación recomendada es ejecutar la prueba desde el contenedor backend:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d db backend
+docker exec protectora-backend npm run test:integration -- --run src/tests/integration/admin.backup.test.ts
+```
+
+3. Terminal 5 (de carga):
+
+Si quieres rellenar la base de datos con datos de prueba (animales, eventos, voluntariado, etc.) OJO!!! LAS FOTOS SE COGEN DE INTERNET ALEATORIAMENTE, NO SE CORRESPONDE CON LO QUE REPRESENTAN (es solo prueba de carga para comprobar que se puede navegar sobre todas las funcionalidades):
+
+```bash
+npm --prefix backend run seed:load-test
+
 ```
 
 ## 2) Instalación con Docker
@@ -133,7 +177,7 @@ npm --prefix backend run test:e2e
 Antes de levantar contenedores, crea el archivo `.env` en la raíz del proyecto:
 
 ```bash
-copy .env.example.docker .env
+copy .env.docker.dev .env
 ```
 
 Ese archivo debe contener al menos estas variables para Docker en producción:

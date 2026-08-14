@@ -64,6 +64,64 @@ async function request(endpoint, options = {}) {
 ============================ */
 export const getAdminDashboard = () => request("/admin/dashboard");
 export const getSecurityAuditLogs = (limit = 100) => request(`/admin/security-audit?limit=${limit}`);
+export const exportDatabaseBackup = async () => {
+  const adminToken = getStoredAdminToken();
+  const csrfToken = getCookie("csrf_token") || getStoredCsrfToken();
+
+  const res = await fetch(`${API_URL}/admin/backup/export`, {
+    credentials: "include",
+    method: "GET",
+    headers: {
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(`Error ${res.status}: ${error}`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  const disposition = res.headers.get("content-disposition") || "";
+  const match = disposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+  const filename = match ? match[1] : "protectora-backup.json";
+
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+
+  return { filename };
+};
+export const importDatabaseBackup = async (payload) => {
+  const adminToken = getStoredAdminToken();
+  const csrfToken = getCookie("csrf_token") || getStoredCsrfToken();
+
+  const res = await fetch(`${API_URL}/admin/backup/import`, {
+    credentials: "include",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+      ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+  const responseBody = contentType.includes("application/json") ? await res.json() : await res.text();
+
+  if (!res.ok) {
+    throw new Error(typeof responseBody === "string" ? responseBody : responseBody?.error || "Error al importar la copia de seguridad");
+  }
+
+  return responseBody;
+};
 
 /* ============================
    ANIMALES

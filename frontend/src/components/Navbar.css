@@ -939,25 +939,29 @@
 
 .modal-close-btn {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: #f3f4f6;
-  border: none;
+  top: 4.5rem;
+  right: 0.85rem;
+  width: 38px;
+  height: 38px;
+  border: 2px solid #ffffff;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  background: rgba(17, 24, 39, 0.8);
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 1rem;
-  color: #6b7280;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  z-index: 10;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .modal-close-btn:hover {
-  background: #e5e7eb;
-  color: #374151;
+  background: rgba(31, 41, 55, 0.95);
+  transform: scale(1.05);
 }
 
 /* ── Modal header ── */

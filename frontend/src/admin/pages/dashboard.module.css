@@ -117,6 +117,75 @@
   margin-top: 1rem;
 }
 
+.backupPanel {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #d7e0ea;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.backupBox {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.8);
+  padding: 0.75rem 0.9rem;
+}
+
+.backupActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.backupButton,
+.secondaryButton {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.7rem 0.95rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.backupButton {
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+}
+
+.secondaryButton {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  color: #334155;
+}
+
+.backupButton:hover,
+.secondaryButton:hover {
+  transform: translateY(-1px);
+  border-color: #94a3b8;
+}
+
+.backupButton:disabled,
+.secondaryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.backupWarning {
+  margin: 0.7rem 0 0;
+  color: #9a5b00;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.backupStatus {
+  margin: 0.7rem 0 0;
+  color: #0f766e;
+  font-weight: 600;
+  font-size: 0.84rem;
+}
+
 .blockHeader {
   margin: 0 0 0.8rem;
   font-size: 0.82rem;

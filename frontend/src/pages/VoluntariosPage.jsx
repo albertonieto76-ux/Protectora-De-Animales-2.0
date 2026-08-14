@@ -129,8 +129,10 @@ export default function VoluntariosPage() {
                     <div className="public-modal-card">
                         {/* Cerrar */}
                         <button
+                            type="button"
                             onClick={() => setModalOpen(false)}
                             className="public-modal-close"
+                            aria-label="Cerrar formulario de voluntariado"
                         >✕</button>
 
                         {enviado ? (
