@@ -20,31 +20,7 @@ Aplicación full-stack para gestionar una protectora de animales con experiencia
 
 ## c. Información sobre su instalación y ejecución.
 
-## Variables de entorno
 
-Crea un archivo `.env` en la raíz del proyecto según cómo vayas a arrancar:
-
-- Para desarrollo con npm: usa `.env.example.npm`.
-- Para despliegue/ejecución con Docker: usa `.env.example.docker`.
-
-Ejemplos de copia en Windows:
-
-```bash
-copy .env.example.npm .env
-copy .env.example.docker .env
-```
-
-Contenido típico para npm (`.env.example.npm`):
-
-```env
-NODE_ENV=development
-PORT=4000
-DATABASE_URL=postgresql://postgres:postgres825j@localhost:5432/protectora?schema=public
-JWT_SECRET=tu_secreto_muy_largo
-MFA_ENCRYPTION_KEY=otra_clave_muy_larga
-CORS_ORIGINS=http://localhost:5173,http://localhost:8080
-VITE_API_URL=http://localhost:4000/api
-```
 
 ## 1) Instalación para desarrollo con npm
 
@@ -73,7 +49,7 @@ npm --prefix backend exec prisma generate
 npm --prefix backend exec prisma db push
 ```
 
-Si quieres crear el administrador inicial:
+Crear el administrador inicial:
 
 ```bash
 npm --prefix backend exec tsx backend/scripts/seedAdmin.ts
@@ -157,11 +133,6 @@ Importante:
 - El backend valida el contenido JSON tras descomprimir si el archivo viene en gzip.
 - Límite recomendado: JSON sin comprimir hasta 20 MB; JSON comprimido hasta 200 MB.
 - Si el tamaño del backup supera ese valor, el navegador puede fallar al importarlo por límites de memoria o carga del archivo.
-- En Docker, la validación recomendada es ejecutar la prueba desde el contenedor backend:
-
-```bash
-docker compose -f docker/docker-compose.yml up -d db backend
-docker exec protectora-backend npm run test:integration -- --run src/tests/integration/admin.backup.test.ts
 ```
 
 3. Terminal 5 (de carga):
@@ -224,8 +195,133 @@ URLs:
 	Contraseña: `Admin1234!`
 Nota: si el administrador ya existe, el seed sí actualiza su contraseña; por defecto queda en `Admin1234!`, salvo que definas `ADMIN_PASSWORD`.
 
-- Backend API: http://localhost:4000/api
+- Backend API mediante el proxy del frontend: http://localhost:8080/api
 - Base de datos: localhost:5432
+
+En Docker de producción solo se publica el puerto `8080`. El backend escucha en el puerto `4000` únicamente dentro de la red interna de Docker.
+
+## DESPLIEGUE DOCKER EN ORACLE CLOUD
+
+El archivo `docker/docker-compose.oracle.yml` permite desplegar la aplicación en una instancia de Oracle Cloud. El despliegue incluye:
+
+- PostgreSQL 16 con almacenamiento persistente.
+- Backend Node.js con migraciones Prisma automáticas.
+- Frontend React servido por Nginx.
+- Caddy como proxy público, con certificado HTTPS automático.
+- Persistencia de las imágenes subidas por los usuarios.
+- Healthchecks y rotación de logs.
+- Base de datos y backend accesibles solo desde la red interna de Docker.
+
+### 1. Preparar la instancia y la red
+
+Se recomienda una instancia de Oracle Linux o Ubuntu con Docker Engine y el complemento Docker Compose instalados. El dominio debe tener un registro DNS `A` apuntando a la IP pública de la instancia.
+
+En la lista de seguridad o NSG de la VCN de Oracle Cloud abre únicamente:
+
+- TCP `22` para SSH, limitado a tu IP siempre que sea posible.
+- TCP `80` para la validación y redirección HTTP.
+- TCP `443` para la aplicación mediante HTTPS.
+- UDP `443` para HTTP/3, opcional pero recomendado.
+
+No abras los puertos `4000` ni `5432`: el backend y PostgreSQL no se publican fuera de Docker.
+
+Si la instancia usa UFW, permite también el tráfico web en el sistema operativo:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 443/udp
+sudo ufw enable
+```
+
+### 2. Configurar las variables de producción
+
+Después de clonar el repositorio en la instancia, entra en su directorio y crea el archivo de entorno:
+
+```bash
+cp .env.example.oracle .env.oracle
+nano .env.oracle
+```
+
+Configura al menos estos valores:
+
+```env
+APP_DOMAIN=protectora.example.com
+CORS_ORIGINS=https://protectora.example.com
+
+POSTGRES_DB=protectora
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=una-contrasena-larga-y-aleatoria
+
+JWT_SECRET=un-secreto-largo-y-aleatorio
+MFA_ENCRYPTION_KEY=otro-secreto-largo-y-diferente
+ADMIN_BOOTSTRAP_KEY=otra-clave-de-inicializacion
+```
+
+`APP_DOMAIN` debe contener solo el dominio, sin `http://`, `https://` ni una ruta. `CORS_ORIGINS` debe contener la URL pública HTTPS completa. Puedes generar secretos con:
+
+```bash
+openssl rand -hex 32
+```
+
+No publiques ni subas `.env.oracle` al repositorio.
+
+### 3. Construir y arrancar la aplicación
+
+```bash
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml up -d --build
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml ps
+```
+
+Caddy solicitará automáticamente el certificado TLS cuando el DNS apunte a la instancia y los puertos `80` y `443` sean accesibles. La aplicación quedará disponible en:
+
+- Frontend: `https://protectora.example.com`
+- Panel admin: `https://protectora.example.com/admin/login`
+- API mediante proxy: `https://protectora.example.com/api`
+
+### 4. Crear el administrador y datos opcionales
+
+Para crear o restablecer el administrador inicial:
+
+```bash
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml exec backend npx tsx scripts/seedAdmin.ts
+```
+
+Credenciales por defecto, salvo que se configure `ADMIN_PASSWORD`:
+
+- Email: `admin@protectora.com`
+- Contraseña: `Admin1234!`
+
+Para cargar datos de demostración opcionales:
+
+```bash
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml exec backend npx tsx scripts/seedLoadTestData.ts
+```
+
+### 5. Operación y actualizaciones
+
+Consultar logs y estado:
+
+```bash
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml logs -f --tail=100
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml ps
+```
+
+Actualizar la aplicación conservando los datos:
+
+```bash
+git pull
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml up -d --build
+```
+
+Detener la aplicación sin borrar datos:
+
+```bash
+docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml down
+```
+
+PostgreSQL, las imágenes subidas y los certificados TLS se almacenan en volúmenes Docker. No uses `down -v` en producción, ya que elimina esos volúmenes y puede provocar pérdida de datos.
 
 
 
@@ -387,3 +483,5 @@ Es una pagina que tiene 2 partes:
 	Contraseña: `Admin1234!`
 
    
+DOCUMENTACION:
+Copia de Seguridad en github: Protectora-De-Animales-2.0/DOCUMENTACION

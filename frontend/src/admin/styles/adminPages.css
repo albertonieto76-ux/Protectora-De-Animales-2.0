@@ -799,10 +799,31 @@
   background: #fff;
 }
 
-.volunteer-roster-item > div {
+.volunteer-roster-item.active {
+  border-color: #2563eb;
+  background: #f8fbff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.volunteer-roster-select {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-selection-label {
+  margin: 0.3rem 0 0;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {

@@ -94,6 +94,13 @@ describe("Admin backup controllers", () => {
     await importDatabaseBackup(req, res);
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(prisma.$transaction).mock.calls[0][1]).toEqual({
+      maxWait: 10_000,
+      timeout: 120_000,
+    });
+    expect(tx.donacion.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.tipoPago.deleteMany.mock.invocationCallOrder[0]
+    );
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       imported: expect.objectContaining({ animals: 1 }),
     }));

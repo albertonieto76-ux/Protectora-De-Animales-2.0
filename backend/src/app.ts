@@ -15,8 +15,11 @@ const __dirname = path.dirname(__filename);
 app.set("trust proxy", 1);
 app.use(setSecurityHeaders);
 app.use(cors(getCorsOptions()));
+app.use(
+  "/api/admin/backup/import",
+  express.raw({ type: ["application/json", "application/gzip", "application/octet-stream", "application/x-gzip"], limit: "200mb" })
+);
 app.use(express.json({ limit: "200mb" }));
-app.use(express.raw({ type: ["application/json", "application/gzip", "application/octet-stream", "application/x-gzip"], limit: "200mb" }));
 app.use(express.urlencoded({ extended: true, limit: "200mb" }));
 app.use(cookieParser());
 app.use(enforceCsrfForCookieAuth);
