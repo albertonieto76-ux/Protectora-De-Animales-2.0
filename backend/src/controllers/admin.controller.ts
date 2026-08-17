@@ -198,6 +198,7 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
       }
       counts.auditLogs = backup.auditLogs.length;
 
+      await tx.donacion.deleteMany();
       await tx.tipoPago.deleteMany();
       if (backup.paymentTypes.length) {
         for (const item of backup.paymentTypes) {
@@ -307,7 +308,6 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
       }
       counts.eventAssistants = backup.eventAssistants.length;
 
-      await tx.donacion.deleteMany();
       if (backup.donations.length) {
         for (const item of backup.donations) {
           await tx.donacion.create({
@@ -323,6 +323,9 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
       counts.donations = backup.donations.length;
 
       return counts;
+    }, {
+      maxWait: 10_000,
+      timeout: 120_000,
     });
 
     res.json({

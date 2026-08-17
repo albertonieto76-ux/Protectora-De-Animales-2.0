@@ -31,8 +31,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
-    ports:
-      - "4000:4000"
 
   frontend:
     build:

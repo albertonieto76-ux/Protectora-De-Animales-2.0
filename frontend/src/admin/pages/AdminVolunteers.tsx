@@ -89,6 +89,7 @@ export const AdminVolunteers = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [selectedVolunteerId, setSelectedVolunteerId] = useState<number | null>(null);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [monthCursor, setMonthCursor] = useState(getMonthStart(new Date()));
@@ -185,6 +186,10 @@ export const AdminVolunteers = () => {
     if (confirm("¿Estás seguro de eliminar este voluntario?")) {
       try {
         await deleteVoluntario(id);
+        if (selectedVolunteerId === id) {
+          setSelectedVolunteerId(null);
+          setSelectedAppointmentId(null);
+        }
         setActionError(null);
         loadVoluntarios();
       } catch (err) {
@@ -193,13 +198,17 @@ export const AdminVolunteers = () => {
     }
   };
 
-  const selectedAppointment = appointments.find((item) => item.id === selectedAppointmentId) || null;
+  const selectedVolunteer = voluntarios.find((item) => item.id === selectedVolunteerId) || null;
+  const visibleAppointments = selectedVolunteerId === null
+    ? appointments
+    : appointments.filter((item) => Number(item.voluntarioId) === selectedVolunteerId);
+  const selectedAppointment = visibleAppointments.find((item) => item.id === selectedAppointmentId) || null;
   const calendarDays = buildCalendarDays(monthCursor);
   const selectedRangeStart = selectedAppointment ? new Date(selectedAppointment.inicio) : null;
   const selectedRangeEnd = selectedAppointment ? new Date(selectedAppointment.fin) : null;
   const selectedDateKey = toDateKey(selectedDate);
   const selectedDateAppointments = sortAppointmentsByStart(
-    appointments.filter((item) => {
+    visibleAppointments.filter((item) => {
       const start = new Date(item.inicio);
       const end = new Date(item.fin);
       const selected = new Date(`${selectedDateKey}T12:00:00`);
@@ -208,7 +217,7 @@ export const AdminVolunteers = () => {
   );
   const appointmentForActions = selectedAppointment || selectedDateAppointments[0] || null;
   const filteredAppointments = sortAppointmentsByStart(
-    appointments.filter((item) => {
+    visibleAppointments.filter((item) => {
       const status = (item.estado || "pendiente").toLowerCase();
       return selectedStatus === "all" || status === selectedStatus;
     }),
@@ -219,11 +228,12 @@ export const AdminVolunteers = () => {
     setMonthCursor(getMonthStart(date));
     setSelectedAppointmentId(null);
     setFormMode("create");
-    setFormData(buildInitialForm(voluntarios[0]?.id ?? null, date));
+    setFormData(buildInitialForm(selectedVolunteerId ?? voluntarios[0]?.id ?? null, date));
   };
 
   const openAppointment = (appointment: any) => {
     const appointmentDate = new Date(appointment.inicio);
+    setSelectedVolunteerId(Number(appointment.voluntarioId));
     setSelectedAppointmentId(appointment.id);
     setSelectedDate(appointmentDate);
     setMonthCursor(getMonthStart(appointmentDate));
@@ -246,7 +256,7 @@ export const AdminVolunteers = () => {
     setSelectedDate(date);
 
     const dayAppointments = sortAppointmentsByStart(
-      appointments.filter((item) => toDateKey(item.inicio) === toDateKey(date)),
+      visibleAppointments.filter((item) => toDateKey(item.inicio) === toDateKey(date)),
     );
 
     if (dayAppointments.length > 0) {
@@ -263,6 +273,13 @@ export const AdminVolunteers = () => {
       horaInicio: current.horaInicio || "09:00",
       horaFin: current.horaFin || "11:00",
     }));
+  };
+
+  const handleVolunteerSelection = (volunteerId: number) => {
+    setSelectedVolunteerId(volunteerId);
+    setSelectedAppointmentId(null);
+    setFormMode("create");
+    setFormData(buildInitialForm(volunteerId, selectedDate));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -344,7 +361,7 @@ export const AdminVolunteers = () => {
     }
   };
 
-  const confirmedCountByDay = appointments.reduce((acc: Record<string, number>, appointment) => {
+  const confirmedCountByDay = visibleAppointments.reduce((acc: Record<string, number>, appointment) => {
     if (appointment.estado !== "confirmada") {
       return acc;
     }
@@ -373,6 +390,9 @@ export const AdminVolunteers = () => {
               <div>
                 <p className="calendar-overline">Calendario mensual</p>
                 <h2 className="calendar-title">{MONTH_LABEL.format(monthCursor)}</h2>
+                <p className="calendar-selection-label">
+                  {selectedVolunteer ? `Citas de ${selectedVolunteer.nombre}` : "Citas de todos los voluntarios"}
+                </p>
               </div>
               <div className="calendar-nav-actions">
                 <button
@@ -411,7 +431,7 @@ export const AdminVolunteers = () => {
                   const confirmedCount = confirmedCountByDay[day.key] || 0;
                   const isSelected = day.key === selectedDateKey;
                   const currentDay = new Date(`${day.key}T12:00:00`);
-                  const dayAppointments = appointments.filter((item) => {
+                  const dayAppointments = visibleAppointments.filter((item) => {
                     const start = new Date(item.inicio);
                     const end = new Date(item.fin);
                     return currentDay >= start && currentDay <= end;
@@ -611,7 +631,9 @@ export const AdminVolunteers = () => {
             <div className="list-panel-header">
               <div>
                 <p className="calendar-overline">Listado lateral</p>
-                <h2 className="calendar-title">Todas las prestaciones</h2>
+                <h2 className="calendar-title">
+                  {selectedVolunteer ? `Prestaciones de ${selectedVolunteer.nombre}` : "Todas las prestaciones"}
+                </h2>
               </div>
               <span className="list-counter">{filteredAppointments.length}</span>
             </div>
@@ -673,12 +695,20 @@ export const AdminVolunteers = () => {
               ) : (
                 <div className="volunteer-roster-list">
                   {voluntarios.map((item) => (
-                    <div key={item.id} className="volunteer-roster-item">
-                      <div>
+                    <div
+                      key={item.id}
+                      className={`volunteer-roster-item ${selectedVolunteerId === item.id ? "active" : ""}`}
+                    >
+                      <button
+                        className="volunteer-roster-select"
+                        type="button"
+                        aria-pressed={selectedVolunteerId === item.id}
+                        onClick={() => handleVolunteerSelection(item.id)}
+                      >
                         <strong>{item.nombre}</strong>
                         <span>{item.disponibilidad || "Sin disponibilidad"}</span>
                         <small>{item.email}</small>
-                      </div>
+                      </button>
                       <button className="admin-btn-danger" type="button" onClick={() => handleDelete(item.id)}>
                         Eliminar
                       </button>
