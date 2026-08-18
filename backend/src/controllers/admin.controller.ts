@@ -270,6 +270,7 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
           await tx.solicitudAdopcion.create({
             data: {
               ...item,
+              fechaCita: asDate(item.fechaCita),
               createdAt: asDate(item.createdAt) ?? new Date(),
               animalId: Number(item.animalId),
             },
@@ -327,6 +328,12 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
       maxWait: 10_000,
       timeout: 120_000,
     });
+
+    for (const table of ["Voluntario", "CitaVoluntariado"]) {
+      await prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('"${table}"', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM "${table}"), 1), 1), EXISTS(SELECT 1 FROM "${table}"))`,
+      );
+    }
 
     res.json({
       message: "Backup importado correctamente",

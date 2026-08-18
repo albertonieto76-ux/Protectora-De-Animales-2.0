@@ -30,8 +30,15 @@ export const createAdoption = async (data: any) => {
   });
 };
 
-export const updateAdoption = async (id: number, data: any) =>
-  prisma.solicitudAdopcion.update({ where: { id }, data });
+export const updateAdoption = async (id: number, data: any) => {
+  const normalizedData = { ...data };
+
+  if (Object.prototype.hasOwnProperty.call(data, "fechaCita")) {
+    normalizedData.fechaCita = data.fechaCita ? new Date(data.fechaCita) : null;
+  }
+
+  return prisma.solicitudAdopcion.update({ where: { id }, data: normalizedData });
+};
 
 export const deleteAdoption = async (id: number) =>
   prisma.solicitudAdopcion.delete({ where: { id } });

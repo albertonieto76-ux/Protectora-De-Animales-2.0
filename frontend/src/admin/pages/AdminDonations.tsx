@@ -11,12 +11,13 @@ const DONATION_TYPE_LABELS: Record<string, string> = {
 };
 
 const getDonationTypeLabel = (value?: string | null) => {
-  if (!value) return "-";
+  if (!value) return "Sin tipo registrado";
   return DONATION_TYPE_LABELS[value] || value;
 };
 
 export const AdminDonations = () => {
   const [donaciones, setDonaciones] = useState<any[]>([]);
+  const [donorSearch, setDonorSearch] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [paymentTypes, setPaymentTypes] = useState<any[]>([]);
   const [paymentTypeForm, setPaymentTypeForm] = useState({ tipo: "", label: "", account: "" });
@@ -147,7 +148,14 @@ export const AdminDonations = () => {
     }
   };
 
-  const totalRecaudado = donaciones.reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
+  const normalizedDonorSearch = donorSearch.trim().toLocaleLowerCase("es-ES");
+  const filteredDonations = donaciones.filter((item) => {
+    const donorMatches = !normalizedDonorSearch
+      || String(item.nombre || "Anónimo").toLocaleLowerCase("es-ES").includes(normalizedDonorSearch)
+      || String(item.email || "").toLocaleLowerCase("es-ES").includes(normalizedDonorSearch);
+    return donorMatches;
+  });
+  const totalRecaudado = filteredDonations.reduce((acc, item) => acc + (Number(item.cantidad) || 0), 0);
   const selectedPaymentTypeItem = paymentTypes.find((item) => item.id === selectedPaymentTypeId) || null;
 
   return (
@@ -157,16 +165,39 @@ export const AdminDonations = () => {
           <div>
             <h1 className="admin-title">💳 Registro de Donaciones</h1>
             <p style={{ color: "#64748b", margin: "0.25rem 0 0 0" }}>
-              Total recaudado: <strong style={{ color: "#10b981", fontSize: "1.1rem" }}>{totalRecaudado.toFixed(2)} €</strong>
+              Total recaudado: <strong data-testid="donation-total" style={{ color: "#10b981", fontSize: "1.1rem" }}>{totalRecaudado.toFixed(2)} €</strong>
             </p>
+            <div className="donation-search-filters" role="search" aria-label="Buscar donaciones por donante">
+              <div className="form-group">
+                <label htmlFor="donation-donor-search">Buscar por donante</label>
+                <input
+                  id="donation-donor-search"
+                  type="search"
+                  placeholder="Nombre o email"
+                  value={donorSearch}
+                  onChange={(event) => setDonorSearch(event.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                disabled={!donorSearch}
+                onClick={() => setDonorSearch("")}
+              >
+                Limpiar
+              </button>
+            </div>
           </div>
         </div>
 
         {loadError ? <AdminStateNotice message={loadError} variant="warning" compact /> : null}
 
         <div className="admin-table-card" style={{ marginBottom: "1.5rem" }}>
-          {donaciones.length === 0 ? (
-            <AdminStateNotice message="No hay registros de donaciones." variant="empty" />
+          {filteredDonations.length === 0 ? (
+            <AdminStateNotice
+              message={donaciones.length === 0 ? "No hay registros de donaciones." : "No hay donaciones que coincidan con la búsqueda."}
+              variant="empty"
+            />
           ) : (
             <table className="admin-table">
               <thead>
@@ -174,20 +205,20 @@ export const AdminDonations = () => {
                   <th>Donante</th>
                   <th>Email</th>
                   <th>Importe (€)</th>
-                  <th>Tipo</th>
+                  <th>Tipo de donación</th>
                   <th>Método</th>
                   <th>Fecha</th>
                 </tr>
               </thead>
               <tbody>
-                {donaciones.map((item) => (
+                {filteredDonations.map((item) => (
                   <tr key={item.id}>
                     <td><strong>{item.nombre || "Anónimo"}</strong></td>
                     <td>{item.email || "-"}</td>
                     <td><span style={{ fontWeight: 700, color: "#059669" }}>+{item.cantidad} €</span></td>
                     <td><span className="badge" style={{ backgroundColor: "#dcfce7", color: "#166534" }}>{getDonationTypeLabel(item.tipoDonacion)}</span></td>
                     <td><span className="badge" style={{ backgroundColor: "#e0e7ff", color: "#3730a3" }}>{item.metodo?.label || item.metodo || "-"}</span></td>
-                    <td>{new Date(item.createdAt || Date.now()).toLocaleDateString()}</td>
+                    <td>{new Date(item.createdAt || Date.now()).toLocaleDateString("es-ES")}</td>
                   </tr>
                 ))}
               </tbody>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createVoluntario, getAnimales, createAdopcion, createDonacion, getPaymentTypes } from "../services/api";
 import { VolunteerAvailabilitySelector } from "./VolunteerAvailabilitySelector";
+import { broadcastVolunteerUpdated } from "../utils/volunteerSignals";
 import { DonationTypeSelector } from "./DonationTypeSelector";
 import "./Navbar.css";
 
@@ -28,6 +29,7 @@ export default function Navbar() {
   const [volForm, setVolForm]             = useState(formVolInicial);
   const [volEnviando, setVolEnviando]     = useState(false);
   const [volEnviado, setVolEnviado]       = useState(false);
+  const [volError, setVolError]           = useState("");
 
   // Modal adopción
   const [adopModalOpen, setAdopModalOpen] = useState(false);
@@ -271,13 +273,16 @@ export default function Navbar() {
   const handleVolSubmit = async (e) => {
     e.preventDefault();
     setVolEnviando(true);
+    setVolError("");
     try {
       await createVoluntario(volForm);
+      broadcastVolunteerUpdated({ source: "navbar-volunteer-form" });
       setVolEnviado(true);
       setVolForm(formVolInicial);
       setTimeout(() => { setVolEnviado(false); setVolModalOpen(false); }, 2200);
     } catch (err) {
       console.error("Error al inscribir voluntario:", err);
+      setVolError(err instanceof Error ? err.message : "No se pudo completar la inscripción. Inténtalo de nuevo.");
     } finally {
       setVolEnviando(false);
     }
@@ -408,6 +413,7 @@ export default function Navbar() {
               closePageLevelModals();
               setVolForm(formVolInicial);
               setVolEnviado(false);
+              setVolError("");
               setVolModalOpen(true);
             }}
           >
@@ -769,10 +775,7 @@ export default function Navbar() {
                     required
                     className="modal-input"
                     value={donationForm.cantidad}
-                    onChange={(e) => {
-                      setDonationPreset("");
-                      setDonationForm({ ...donationForm, cantidad: e.target.value, tipoDonacion: "" });
-                    }}
+                    onChange={(e) => setDonationForm({ ...donationForm, cantidad: e.target.value })}
                   />
                   <input type="text" placeholder="Nombre completo *" required className="modal-input" value={donationForm.nombre} onChange={(e) => setDonationForm({ ...donationForm, nombre: e.target.value })} />
                   <input type="email" placeholder="Correo electrónico *" required className="modal-input" value={donationForm.email} onChange={(e) => setDonationForm({ ...donationForm, email: e.target.value })} />
@@ -889,6 +892,7 @@ export default function Navbar() {
                     onChange={(value) => setVolForm({ ...volForm, disponibilidad: value })}
                     className="modal-availability-selector"
                   />
+                  {volError ? <p className="modal-form-error" role="alert">{volError}</p> : null}
                   <button type="submit" disabled={volEnviando} className={`modal-submit-btn ${volEnviando ? "loading" : ""}`}>
                     {volEnviando ? "Enviando..." : "✨ Inscribirme como voluntario"}
                   </button>
