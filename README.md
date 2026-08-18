@@ -285,7 +285,8 @@ Caddy solicitará automáticamente el certificado TLS cuando el DNS apunte a la 
 Para crear o restablecer el administrador inicial:
 
 ```bash
-docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml exec backend npx tsx scripts/seedAdmin.ts
+docker compose -f docker/docker-compose.oracle.yml --env-file .env.oracle exec backend npx tsx scripts/seedAdmin.ts
+
 ```
 
 Credenciales por defecto, salvo que se configure `ADMIN_PASSWORD`:
@@ -472,13 +473,17 @@ Es una pagina que tiene 2 partes:
 	-	Sucripción a voluntariado.
 
 ## f. Usuario y contraseña de prueba
-   Para la parte de administración de la página:
+   Para la parte de administración de la página: (desde la parte de admin en la esquina inferior izquierda se sale a la página de presentación)
    Postgres en local:
 	Panel admin: http://localhost:5173/admin/login
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
    Docker:
     Panel admin: http://localhost:8080/admin/login
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+   Oracle cloud:
+    Panel admin: http://51.170.48.202/admin/
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
 
