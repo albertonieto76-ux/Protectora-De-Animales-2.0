@@ -3,10 +3,11 @@ import type { CorsOptions } from "cors";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const CSRF_EXEMPT_PATHS = new Set(["/api/auth/login"]);
+const PUBLIC_SUBMISSION_PATHS = new Set(["/api/adoptions", "/api/donations", "/api/volunteers"]);
 
 const isEventAssistantRoute = (path: string) => /\/api\/events\/[0-9]+\/assist$/.test(path);
 const isPublicSubmissionRoute = (method: string, path: string) =>
-  method.toUpperCase() === "POST" && path === "/api/adoptions";
+  method.toUpperCase() === "POST" && PUBLIC_SUBMISSION_PATHS.has(path);
 
 export const getCorsOptions = (): CorsOptions => {
   const raw = process.env.CORS_ORIGINS || "http://localhost:5173";

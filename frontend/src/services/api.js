@@ -75,7 +75,11 @@ export async function createVoluntario(data) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
-    return res.json();
+    const response = await res.json();
+    if (!res.ok) {
+        throw new Error(response?.error || "No se pudo registrar la solicitud de voluntariado");
+    }
+    return response;
 }
 
 // EVENTOS
@@ -105,7 +109,11 @@ export async function createDonacion(data) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
-    return res.json();
+    const response = await res.json();
+    if (!res.ok) {
+        throw new Error(response?.error || "No se pudo registrar la donación");
+    }
+    return response;
 }
 
 export async function getPaymentTypes() {
