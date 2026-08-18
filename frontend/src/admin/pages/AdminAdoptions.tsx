@@ -107,7 +107,9 @@ export const AdminAdoptions = () => {
   const selectedDateAdoptions = sortAdoptionsByCreatedAt(
     adoptions.filter((item) => toDateKey(item.createdAt) === selectedDateKey),
   );
-  const adoptionForActions = selectedAdoption || selectedDateAdoptions[0] || null;
+  const adoptionForActions = selectedDateAdoptions.find((item) => item.id === selectedAdoptionId)
+    || selectedDateAdoptions[0]
+    || null;
   const calendarDays = buildCalendarDays(monthCursor);
 
   const openAdoption = (item: any) => {
@@ -138,9 +140,11 @@ export const AdminAdoptions = () => {
     }
 
     try {
-      await updateAdopcionStatus(targetId, newStatus);
+      const updatedAdoption = await updateAdopcionStatus(targetId, newStatus);
+      setAdoptions((current) => current.map((item) => (
+        item.id === targetId ? { ...item, ...updatedAdoption, estado: newStatus } : item
+      )));
       setActionError(null);
-      loadAdoptions();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Error al actualizar el estado de la solicitud.");
     }
