@@ -50,7 +50,11 @@ export async function createAdopcion(data) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
-    return res.json();
+    const response = await res.json();
+    if (!res.ok) {
+        throw new Error(response?.error || "No se pudo registrar la solicitud de adopción");
+    }
+    return response;
 }
 
 

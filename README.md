@@ -473,7 +473,13 @@ Es una pagina que tiene 2 partes:
 	-	Sucripción a voluntariado.
 
 ## f. Usuario y contraseña de prueba
-   Para la parte de administración de la página: (desde la parte de admin en la esquina inferior izquierda se sale a la página de presentación)
+   Para la parte de administración de la página: 
+   (desde la parte de admin en la esquina inferior izquierda se sale a la página principal)
+    Oracle cloud:
+    Panel admin: https://protectora-pfm.duckdns.org/admin/
+	Email: `admin@protectora.com`
+	Contraseña: `Admin1234!`
+	
    Postgres en local:
 	Panel admin: http://localhost:5173/admin/login
 	Email: `admin@protectora.com`
@@ -482,11 +488,37 @@ Es una pagina que tiene 2 partes:
     Panel admin: http://localhost:8080/admin/login
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
-   Oracle cloud:
-    Panel admin: http://51.170.48.202/admin/
-	Email: `admin@protectora.com`
-	Contraseña: `Admin1234!`
 
+## Despliegue
+
+Infraestructura
+
+Oracle Cloud Infrastructure
+Ubuntu 22.04
+Docker
+Docker Compose
+PostgreSQL 16
+Nginx
+Caddy
+
+Contenedores
+
+Contenedor	Función
+db	PostgreSQL
+backend	API Node.js
+frontend	Aplicación React + Nginx
+proxy	Caddy / reverse proxy
+
+Persistencia
+
+postgres_data → base de datos
+backend_uploads → archivos subidos
+caddy_data → certificados/datos de Caddy
+caddy_config → configuración de Caddy
    
-DOCUMENTACION:
+## DOCUMENTACION:
+
+Directorio compartido:
+https://drive.google.com/drive/folders/1-_ptK3e_Ju8coRBNDTflvsw--gDMKOgC?usp=sharing
+
 Copia de Seguridad en github: Protectora-De-Animales-2.0/DOCUMENTACION
