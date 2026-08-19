@@ -109,6 +109,14 @@ Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos 
 npm --prefix backend run test:e2e
 ```
 
+Los tests E2E requieren `TEST_DATABASE_URL` en `.env`, apuntando a una base de datos exclusiva (por ejemplo, `protectora_test`). Sus tablas se vacían antes de cada prueba; nunca uses la URL de desarrollo o producción. Tras crear esa base, aplica el esquema con su URL y ejecuta los tests:
+
+```powershell
+$env:DATABASE_URL = $env:TEST_DATABASE_URL
+npm --prefix backend run prisma:push
+npm --prefix backend run test:e2e
+```
+
 ### Importación de backups: JSON sin comprimir y gzip
 
 El panel de administración acepta los dos formatos de backup siguientes:

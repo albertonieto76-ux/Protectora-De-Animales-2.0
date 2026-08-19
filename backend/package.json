@@ -16,7 +16,7 @@
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest --config src/vitest.config.ts --run src/tests --exclude \"src/tests/integration/**\" --exclude \"src/tests/e2e/**\" --exclude \"src/tests/docker/**\" --exclude \"src/tests/e2e-from-old-project.test.ts\" --exclude \"src/tests/integration-from-old-project.test.ts\" --exclude \"src/tests/integration.test.ts\"",
     "test:integration": "vitest --config src/vitest.config.ts --run src/tests/integration",
-    "test:e2e": "vitest --config src/vitest.config.ts --run src/tests/e2e src/tests/e2e-from-old-project.test.ts",
+    "test:e2e": "vitest --config src/vitest.e2e.config.ts --run src/tests/e2e src/tests/e2e-from-old-project.test.ts",
     "test:docker:smoke": "vitest --config src/vitest.config.ts --run src/tests/docker",
     "test:docker": "npm run test:docker:smoke && npm run test",
     "coverage": "vitest --config src/vitest.config.ts run --coverage"
