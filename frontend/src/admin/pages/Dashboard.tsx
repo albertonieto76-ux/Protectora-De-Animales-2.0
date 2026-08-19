@@ -206,7 +206,7 @@ export const Dashboard = () => {
             <QuickList
               title="Últimas solicitudes"
               items={stats.latestAdoptions || []}
-              renderItem={(s: any) => `${s.nombre} → Animal #${s.animalId}`}
+              renderItem={(s: any) => `Solicitud ${s.id} → ${s.animal?.name || `Animal #${s.animalId}`}`}
               emptyMessage="Todavía no hay solicitudes recientes para mostrar."
             />
           </div>

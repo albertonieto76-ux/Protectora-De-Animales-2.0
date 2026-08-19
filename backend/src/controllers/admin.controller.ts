@@ -63,7 +63,11 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
       prisma.donacion.count().catch(() => 0),
       prisma.donacion.aggregate({ _sum: { cantidad: true } }).catch(() => ({ _sum: { cantidad: 0 } })),
       prisma.animal.findMany({ take: 5, orderBy: { createdAt: "desc" } }).catch(() => []),
-      prisma.solicitudAdopcion.findMany({ take: 5, orderBy: { createdAt: "desc" } }).catch(() => []),
+      prisma.solicitudAdopcion.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { animal: { select: { name: true } } },
+      }).catch(() => []),
     ]);
 
     res.json({
