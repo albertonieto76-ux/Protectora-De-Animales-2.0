@@ -337,6 +337,33 @@ docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml down
 
 PostgreSQL, las imágenes subidas y los certificados TLS se almacenan en volúmenes Docker. No uses `down -v` en producción, ya que elimina esos volúmenes y puede provocar pérdida de datos.
 
+## Despliegue
+
+Infraestructura
+
+Oracle Cloud Infrastructure
+Ubuntu 22.04
+Docker
+Docker Compose
+PostgreSQL 16
+Nginx
+Caddy
+
+Contenedores
+
+Contenedor	Función
+db	PostgreSQL
+backend	API Node.js
+frontend	Aplicación React + Nginx
+proxy	Caddy / reverse proxy
+
+Persistencia
+
+postgres_data → base de datos
+backend_uploads → archivos subidos
+caddy_data → certificados/datos de Caddy
+caddy_config → configuración de Caddy
+
 ## d. Estructura del proyecto.
 
 - `frontend/`: aplicación React
@@ -380,33 +407,7 @@ Es una pagina que tiene 2 partes:
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
 
-## Despliegue
-
-Infraestructura
-
-Oracle Cloud Infrastructure
-Ubuntu 22.04
-Docker
-Docker Compose
-PostgreSQL 16
-Nginx
-Caddy
-
-Contenedores
-
-Contenedor	Función
-db	PostgreSQL
-backend	API Node.js
-frontend	Aplicación React + Nginx
-proxy	Caddy / reverse proxy
-
-Persistencia
-
-postgres_data → base de datos
-backend_uploads → archivos subidos
-caddy_data → certificados/datos de Caddy
-caddy_config → configuración de Caddy
-   
+ 
 ## DOCUMENTACION:
 
 Directorio compartido:
