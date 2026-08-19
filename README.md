@@ -105,14 +105,11 @@ npx vitest --config src/vitest.config.ts --run src/tests/integration/admin.backu
 
 Para ejecutar también pruebas e2e del backend (más estrictas y con requisitos extra de auth/datos):
 
-```bash
-npm --prefix backend run test:e2e
-```
-
 Los tests E2E requieren `TEST_DATABASE_URL` en `.env`, apuntando a una base de datos exclusiva (por ejemplo, `protectora_test`). Sus tablas se vacían antes de cada prueba; nunca uses la URL de desarrollo o producción. Tras crear esa base, aplica el esquema con su URL y ejecuta los tests:
 
-```powershell
-$env:DATABASE_URL = $env:TEST_DATABASE_URL
+```bash
+set "TEST_DATABASE_URL=postgresql://postgres:postgres825j@localhost:5432/protectora_test?schema=public"
+set "DATABASE_URL=%TEST_DATABASE_URL%"
 npm --prefix backend run prisma:push
 npm --prefix backend run test:e2e
 ```
@@ -206,7 +203,15 @@ Nota: si el administrador ya existe, el seed sí actualiza su contraseña; por d
 - Backend API mediante el proxy del frontend: http://localhost:8080/api
 - Base de datos: localhost:5432
 
-En Docker de producción solo se publica el puerto `8080`. El backend escucha en el puerto `4000` únicamente dentro de la red interna de Docker.
+
+## Verificación funcional
+
+Se han validado estos puntos con ejecución real:
+
+- Los contenedores `db`, `backend` y `frontend` quedan levantados correctamente en Docker.
+- El backend responde en `http://localhost:4000/api` con `200 OK`.
+- El frontend queda disponible en `http://localhost:5173` en desarrollo y en `http://localhost:8080` en producción Docker.
+- El endpoint `/api/events` responde correctamente tras sincronizar el esquema Prisma con la base de datos.
 
 ## DESPLIEGUE DOCKER EN ORACLE CLOUD
 
@@ -332,55 +337,6 @@ docker compose --env-file .env.oracle -f docker/docker-compose.oracle.yml down
 
 PostgreSQL, las imágenes subidas y los certificados TLS se almacenan en volúmenes Docker. No uses `down -v` en producción, ya que elimina esos volúmenes y puede provocar pérdida de datos.
 
-
-
-## Verificación funcional
-
-Se han validado estos puntos con ejecución real:
-
-- Los contenedores `db`, `backend` y `frontend` quedan levantados correctamente en Docker.
-- El backend responde en `http://localhost:4000/api` con `200 OK`.
-- El frontend queda disponible en `http://localhost:5173` en desarrollo y en `http://localhost:8080` en producción Docker.
-- El endpoint `/api/events` responde correctamente tras sincronizar el esquema Prisma con la base de datos.
-
-### 2.1. Tests del backend contra Docker (recomendado en Windows)
-
-Si tienes PostgreSQL local instalado en Windows, `localhost:5432` puede apuntar a tu servicio local en lugar de la BD Docker, y los tests pueden fallar con `P1003`.
-
-Flujo recomendado para ejecutar tests realmente contra Docker:
-
-```bash
-docker compose -f docker/docker-compose.yml up -d db backend
-docker exec protectora-backend npm install
-docker exec protectora-backend npm run test:docker
-```
-
-Notas:
-- `test:docker:smoke` valida conectividad real del contenedor (health + `/api/events`).
-- `test:docker` ejecuta primero smoke y luego la suite normal (`test`).
-
-Comandos de ejecucion (resumen rapido):
-
-```bash
-# 1) Levantar solo BD y backend de desarrollo
-docker compose -f docker/docker-compose.yml up -d db backend
-
-# 2) Instalar dependencias dentro del contenedor backend (primera vez o tras cambios)
-docker exec protectora-backend npm install
-
-# 3) Smoke rapido de Docker (conectividad real)
-docker exec protectora-backend npm run test:docker:smoke
-
-# 4) Suite completa docker-friendly (smoke + unit + integration)
-docker exec protectora-backend npm run test:docker
-```
-
-Equivalencias:
-- `test:docker:smoke` -> solo pruebas de conectividad en `src/tests/docker`.
-- `test:docker` -> equivale a `test:docker:smoke` + `npm run test`.
-- `npm run test` -> `test:unit` + `test:integration`.
-- `test:unit` excluye `src/tests/docker/**`, por lo que no requiere backend escuchando en `localhost:4000`.
-
 ## d. Estructura del proyecto.
 
 - `frontend/`: aplicación React
@@ -388,80 +344,6 @@ Equivalencias:
 - `backend/prisma/`: esquema y migraciones de la base de datos
 - `docker/`: configuración de Docker
 - `docs/`: documentación del proyecto
-
-## TROUBLESHOOTING DE DOCKERS:
-
-## 0) Instalación limpia recomendada
-
-Si vienes de un clon nuevo, o si Docker ya había levantado una base de datos antigua y aparecen errores de Prisma como `P2021`, `P2022` o columnas/tablas que no existen, usa esta secuencia completa.
-
-### 0.1. Instalación limpia con Docker
-
-Este flujo borra los volúmenes de Docker de este proyecto y recrea la base de datos desde cero.
-
-```bash
-copy .env.example.docker .env
-docker compose --env-file .env -f docker/docker-compose.prod.yml down -v --remove-orphans
-docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
-docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx prisma migrate deploy
-docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedAdmin.ts
-docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx tsx scripts/seedLoadTestData.ts
-```
-
-Qué hace cada paso:
-- crea el archivo `.env` si todavía no existe
-- elimina contenedores y volúmenes anteriores del proyecto
-- reconstruye backend y frontend con la versión correcta de Node
-- aplica todas las migraciones de Prisma
-- crea el usuario administrador
-- carga datos de prueba
-
-Credenciales por defecto del admin:
-- Email: `admin@protectora.com`
-- Contraseña: `Admin1234!`
-
-URLs tras el arranque:
-- Frontend: http://localhost:8080
-- Panel admin: http://localhost:8080/admin/login
-- Backend API: http://localhost:4000/api
-
-### 0.2. Limpieza rápida sin borrar datos locales de npm
-
-Si el problema está solo en Docker, no hace falta reinstalar dependencias con npm. Normalmente basta con:
-
-```bash
-docker compose --env-file .env -f docker/docker-compose.prod.yml down -v --remove-orphans
-docker compose --env-file .env -f docker/docker-compose.prod.yml up --build -d
-docker compose --env-file .env -f docker/docker-compose.prod.yml exec backend npx prisma migrate deploy
-```
-
-### Diagnostico rapido (si "esta manana funcionaba")
-
-Si tras un reset el panel admin en `http://localhost:8080/admin/login` falla (por ejemplo, `500` en `POST /api/auth/login`), revisa CORS primero.
-
-Comprobacion minima:
-
-```bash
-docker logs protectora-backend-prod --tail 80
-```
-
-Si aparece `Origen no permitido por CORS`, usa ambos origenes en `.env`:
-
-```env
-CORS_ORIGINS=http://localhost:5173,http://localhost:8080
-```
-
-Aplica cambio recreando backend:
-
-```bash
-docker compose --env-file .env -f docker/docker-compose.prod.yml up -d --force-recreate backend
-```
-
-- La instalación con npm es la recomendada para desarrollo y pruebas locales.
-- La instalación con npm también sirve para poner en producción sin Docker.
-- La instalación con Docker es una ruta independiente para despliegue incluido y pruebas de entorno.
-- En Docker, el backend apunta a la base de datos con host `db`.
-- No se deben compartir archivos `.env` ni credenciales reales en repositorios públicos.
 
 ## e. Funcionalidades principales.
 
@@ -482,8 +364,9 @@ Es una pagina que tiene 2 partes:
 
 ## f. Usuario y contraseña de prueba
    Para la parte de administración de la página: 
-   (desde la parte de admin en la esquina inferior izquierda se sale a la página principal)
+   
     Oracle cloud:
+	FRONTEND: https://protectora-pfm.duckdns.org/
     Panel admin: https://protectora-pfm.duckdns.org/admin/
 	Email: `admin@protectora.com`
 	Contraseña: `Admin1234!`
