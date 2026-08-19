@@ -4,7 +4,7 @@ import { AdminStateNotice } from "../components/AdminStateNotice";
 import { getEventos, createEvento, updateEvento, deleteEvento, getEventAssistants } from "../../api.js";
 import "../styles/adminPages.css";
 
-const toDateTimeLocalValue = (value?: string | Date | null) => {
+export const toDateTimeLocalValue = (value?: string | Date | null) => {
   if (!value) return "";
 
   const date = typeof value === "string" ? new Date(value) : value;
@@ -20,6 +20,8 @@ const toDateTimeLocalValue = (value?: string | Date | null) => {
 
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+export const toEventApiDate = (value: string) => new Date(value).toISOString();
 
 export const AdminEvents = () => {
   const [eventos, setEventos] = useState<any[]>([]);
@@ -212,7 +214,7 @@ export const AdminEvents = () => {
       const payload = new FormData();
       payload.append("titulo", formData.titulo);
       if (formData.descripcion) payload.append("descripcion", formData.descripcion);
-      payload.append("fecha", formData.fecha);
+      payload.append("fecha", toEventApiDate(formData.fecha));
       if (formData.lugar) payload.append("lugar", formData.lugar);
       formData.images.slice(0, 10).forEach((file) => payload.append("images", file));
 

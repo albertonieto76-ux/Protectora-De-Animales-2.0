@@ -318,6 +318,7 @@ async function createEvents() {
 
 async function createDonations(paymentTypes: Array<{ id: number }>) {
   const donations = [];
+  const donationTypes = ["puntual", "veterinaria", "alimentacion"];
 
   for (let i = 0; i < 10; i++) {
     const amount = Number((15 + i * 7.5).toFixed(2));
@@ -329,6 +330,7 @@ async function createDonations(paymentTypes: Array<{ id: number }>) {
         nombre: `${DONOR_NAMES[i]}`,
         email: `load.donor${i + 1}@example.com`,
         metodoId: paymentTypeId,
+        tipoDonacion: donationTypes[i % donationTypes.length],
       },
     });
 

@@ -84,6 +84,9 @@ const buildInitialForm = (volunteerId: number | null, date: Date) => ({
 const sortAppointmentsByStart = (items: any[]) =>
   [...items].sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime());
 
+const isAppointmentOnDate = (appointment: any, dateKey: string) =>
+  dateKey >= toDateKey(appointment.inicio) && dateKey <= toDateKey(appointment.fin);
+
 export const AdminVolunteers = () => {
   const [voluntarios, setVoluntarios] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -97,6 +100,7 @@ export const AdminVolunteers = () => {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingAppointment, setIsDeletingAppointment] = useState(false);
+  const hasInitializedAppointmentSelection = useRef(false);
   const detailPanelRef = useRef<HTMLDivElement | null>(null);
   const [formData, setFormData] = useState(() => buildInitialForm(null, new Date()));
 
@@ -170,12 +174,35 @@ export const AdminVolunteers = () => {
   }, [voluntarios]);
 
   useEffect(() => {
-    if (!selectedAppointmentId) {
+    if (!appointments.length) {
+      hasInitializedAppointmentSelection.current = false;
+      setSelectedAppointmentId(null);
       return;
     }
 
-    const appointmentExists = appointments.some((item) => item.id === selectedAppointmentId);
-    if (!appointmentExists) {
+    const selectedItem = appointments.find((item) => item.id === selectedAppointmentId);
+    if (!hasInitializedAppointmentSelection.current) {
+      hasInitializedAppointmentSelection.current = true;
+      const firstAppointment = sortAppointmentsByStart(appointments)[0];
+      const appointmentDate = new Date(firstAppointment.inicio);
+      setSelectedVolunteerId(null);
+      setSelectedAppointmentId(firstAppointment.id);
+      setSelectedDate(appointmentDate);
+      setMonthCursor(getMonthStart(appointmentDate));
+      setFormMode("edit");
+      setFormData({
+        voluntarioId: String(firstAppointment.voluntarioId),
+        fechaInicio: toDateInputValue(firstAppointment.inicio),
+        fechaFin: toDateInputValue(firstAppointment.fin),
+        horaInicio: toTimeInputValue(firstAppointment.inicio),
+        horaFin: toTimeInputValue(firstAppointment.fin),
+        estado: firstAppointment.estado || "confirmada",
+        notas: firstAppointment.notas || "",
+      });
+      return;
+    }
+
+    if (selectedAppointmentId && !selectedItem) {
       setSelectedAppointmentId(null);
       setFormMode("create");
       setFormData(buildInitialForm(voluntarios[0]?.id ?? null, selectedDate));
@@ -204,18 +231,15 @@ export const AdminVolunteers = () => {
     : appointments.filter((item) => Number(item.voluntarioId) === selectedVolunteerId);
   const selectedAppointment = visibleAppointments.find((item) => item.id === selectedAppointmentId) || null;
   const calendarDays = buildCalendarDays(monthCursor);
-  const selectedRangeStart = selectedAppointment ? new Date(selectedAppointment.inicio) : null;
-  const selectedRangeEnd = selectedAppointment ? new Date(selectedAppointment.fin) : null;
+  const selectedRangeStartKey = selectedAppointment ? toDateKey(selectedAppointment.inicio) : null;
+  const selectedRangeEndKey = selectedAppointment ? toDateKey(selectedAppointment.fin) : null;
   const selectedDateKey = toDateKey(selectedDate);
   const selectedDateAppointments = sortAppointmentsByStart(
-    visibleAppointments.filter((item) => {
-      const start = new Date(item.inicio);
-      const end = new Date(item.fin);
-      const selected = new Date(`${selectedDateKey}T12:00:00`);
-      return selected >= start && selected <= end;
-    }),
+    visibleAppointments.filter((item) => isAppointmentOnDate(item, selectedDateKey)),
   );
-  const appointmentForActions = selectedAppointment || selectedDateAppointments[0] || null;
+  const appointmentForActions = selectedDateAppointments.find((item) => item.id === selectedAppointmentId)
+    || selectedDateAppointments[0]
+    || null;
   const filteredAppointments = sortAppointmentsByStart(
     visibleAppointments.filter((item) => {
       const status = (item.estado || "pendiente").toLowerCase();
@@ -229,6 +253,9 @@ export const AdminVolunteers = () => {
     setSelectedAppointmentId(null);
     setFormMode("create");
     setFormData(buildInitialForm(selectedVolunteerId ?? voluntarios[0]?.id ?? null, date));
+    requestAnimationFrame(() => {
+      detailPanelRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    });
   };
 
   const openAppointment = (appointment: any) => {
@@ -248,7 +275,7 @@ export const AdminVolunteers = () => {
       notas: appointment.notas || "",
     });
     requestAnimationFrame(() => {
-      detailPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      detailPanelRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     });
   };
 
@@ -256,7 +283,7 @@ export const AdminVolunteers = () => {
     setSelectedDate(date);
 
     const dayAppointments = sortAppointmentsByStart(
-      visibleAppointments.filter((item) => toDateKey(item.inicio) === toDateKey(date)),
+      visibleAppointments.filter((item) => isAppointmentOnDate(item, toDateKey(date))),
     );
 
     if (dayAppointments.length > 0) {
@@ -430,16 +457,11 @@ export const AdminVolunteers = () => {
                 {calendarDays.map((day) => {
                   const confirmedCount = confirmedCountByDay[day.key] || 0;
                   const isSelected = day.key === selectedDateKey;
-                  const currentDay = new Date(`${day.key}T12:00:00`);
-                  const dayAppointments = visibleAppointments.filter((item) => {
-                    const start = new Date(item.inicio);
-                    const end = new Date(item.fin);
-                    return currentDay >= start && currentDay <= end;
-                  });
+                  const dayAppointments = visibleAppointments.filter((item) => isAppointmentOnDate(item, day.key));
                   const hasPendingDayAppointment = dayAppointments.some((item) => (item.estado || "confirmada").toLowerCase() === "pendiente");
                   const hasCancelledDayAppointment = dayAppointments.some((item) => (item.estado || "confirmada").toLowerCase() === "cancelada");
-                  const isInSelectedRange = selectedRangeStart && selectedRangeEnd
-                    ? currentDay >= selectedRangeStart && currentDay <= selectedRangeEnd
+                  const isInSelectedRange = selectedRangeStartKey && selectedRangeEndKey
+                    ? day.key >= selectedRangeStartKey && day.key <= selectedRangeEndKey
                     : false;
                   const selectedAppointmentStatus = (selectedAppointment?.estado || "confirmada").toLowerCase();
                   const rangeStatusClass = isInSelectedRange
@@ -450,7 +472,13 @@ export const AdminVolunteers = () => {
                         : "calendar-day-selected-range"
                     : "";
                   const rangeHoursLabel = selectedAppointment && isInSelectedRange
-                    ? `${TIME_LABEL.format(new Date(selectedAppointment.inicio))} → ${TIME_LABEL.format(new Date(selectedAppointment.fin))}`
+                    ? selectedRangeStartKey === selectedRangeEndKey
+                      ? `${TIME_LABEL.format(new Date(selectedAppointment.inicio))} → ${TIME_LABEL.format(new Date(selectedAppointment.fin))}`
+                      : day.key === selectedRangeStartKey
+                        ? `Inicio ${TIME_LABEL.format(new Date(selectedAppointment.inicio))}`
+                        : day.key === selectedRangeEndKey
+                          ? `Fin ${TIME_LABEL.format(new Date(selectedAppointment.fin))}`
+                          : "En curso"
                     : null;
 
                   return (
@@ -493,16 +521,22 @@ export const AdminVolunteers = () => {
                   <h3 className="editor-title">{DATE_LABEL.format(selectedDate)}</h3>
                 </div>
                 <div className="editor-action-group">
-                  <button type="button" className="admin-btn-primary" onClick={() => startCreateFlow(selectedDate)}>
-                    Alta
+                  <button
+                    type={formMode === "create" ? "submit" : "button"}
+                    form={formMode === "create" ? "volunteer-appointment-form" : undefined}
+                    className="admin-btn-primary"
+                    disabled={isSaving || !voluntarios.length}
+                    onClick={formMode === "edit" ? () => startCreateFlow(selectedDate) : undefined}
+                  >
+                    {formMode === "edit" ? "Alta" : isSaving ? "Guardando..." : "Guardar alta"}
                   </button>
                   <button
-                    type="button"
+                    type="submit"
+                    form="volunteer-appointment-form"
                     className="admin-btn-secondary"
-                    disabled={!appointmentForActions}
-                    onClick={() => appointmentForActions && openAppointment(appointmentForActions)}
+                    disabled={formMode !== "edit" || !selectedAppointment || isSaving}
                   >
-                    Modificar voluntariado
+                    {isSaving && formMode === "edit" ? "Guardando..." : "Modificar voluntariado"}
                   </button>
                   <button
                     type="button"
@@ -533,12 +567,13 @@ export const AdminVolunteers = () => {
                 <AdminStateNotice message="No hay prestaciones cargadas para este día." variant="empty" compact />
               )}
 
-              <form className="form-card volunteer-appointment-form" onSubmit={handleFormSubmit}>
+              <form id="volunteer-appointment-form" className="form-card volunteer-appointment-form" onSubmit={handleFormSubmit}>
                 <h3>{formMode === "edit" ? "Modificar voluntariado" : "Alta de nuevo voluntariado"}</h3>
                 <div className="form-grid">
                   <div className="form-group">
-                    <label>Voluntario</label>
+                    <label htmlFor="appointment-volunteer">Voluntario</label>
                     <select
+                      id="appointment-volunteer"
                       required
                       value={formData.voluntarioId}
                       onChange={(e) => setFormData({ ...formData, voluntarioId: e.target.value })}
@@ -620,9 +655,6 @@ export const AdminVolunteers = () => {
                   />
                 </div>
 
-                <button type="submit" className="admin-btn-primary" disabled={isSaving || !voluntarios.length}>
-                  {isSaving ? "Guardando..." : formMode === "edit" ? "Guardar cambios" : "Crear prestación"}
-                </button>
               </form>
             </div>
           </section>

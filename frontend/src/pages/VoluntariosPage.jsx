@@ -18,10 +18,12 @@ export default function VoluntariosPage() {
     });
     const [enviado, setEnviado] = useState(false);
     const [enviando, setEnviando] = useState(false);
+    const [submitError, setSubmitError] = useState("");
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setEnviando(true);
+        setSubmitError("");
         try {
             await crear(form);
             broadcastVolunteerUpdated({ source: "public-volunteer-form" });
@@ -31,8 +33,8 @@ export default function VoluntariosPage() {
                 setEnviado(false);
                 setModalOpen(false);
             }, 2000);
-        } catch {
-            // error silencioso, el hook ya lo gestiona
+        } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : "No se pudo completar la inscripción. Inténtalo de nuevo.");
         } finally {
             setEnviando(false);
         }
@@ -171,6 +173,8 @@ export default function VoluntariosPage() {
                                         value={form.disponibilidad}
                                         onChange={(value) => setForm({ ...form, disponibilidad: value })}
                                     />
+
+                                    {submitError ? <p className="public-form-error" role="alert">{submitError}</p> : null}
 
                                     <button
                                         type="submit"

@@ -6,6 +6,7 @@ import { prisma } from "../../services/prisma.ts";
 vi.mock("../../services/prisma.ts", () => ({
   prisma: {
     $transaction: vi.fn(),
+    $executeRawUnsafe: vi.fn().mockResolvedValue(1),
     animal: { findMany: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     solicitudAdopcion: { findMany: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
     voluntario: { findMany: vi.fn(), deleteMany: vi.fn(), create: vi.fn() },
@@ -101,6 +102,7 @@ describe("Admin backup controllers", () => {
     expect(tx.donacion.deleteMany.mock.invocationCallOrder[0]).toBeLessThan(
       tx.tipoPago.deleteMany.mock.invocationCallOrder[0]
     );
+    expect(prisma.$executeRawUnsafe).toHaveBeenCalledTimes(2);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       imported: expect.objectContaining({ animals: 1 }),
     }));

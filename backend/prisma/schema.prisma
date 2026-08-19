@@ -27,6 +27,7 @@ model SolicitudAdopcion {
   telefono  String?
   mensaje   String?
   estado    String   @default("pendiente")
+  fechaCita DateTime?
   createdAt DateTime @default(now())
 
   animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)

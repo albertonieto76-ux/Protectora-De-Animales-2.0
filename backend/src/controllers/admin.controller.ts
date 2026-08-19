@@ -63,7 +63,11 @@ export const getDashboardStats = async (_req: Request, res: Response) => {
       prisma.donacion.count().catch(() => 0),
       prisma.donacion.aggregate({ _sum: { cantidad: true } }).catch(() => ({ _sum: { cantidad: 0 } })),
       prisma.animal.findMany({ take: 5, orderBy: { createdAt: "desc" } }).catch(() => []),
-      prisma.solicitudAdopcion.findMany({ take: 5, orderBy: { createdAt: "desc" } }).catch(() => []),
+      prisma.solicitudAdopcion.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: { animal: { select: { name: true } } },
+      }).catch(() => []),
     ]);
 
     res.json({
@@ -270,6 +274,7 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
           await tx.solicitudAdopcion.create({
             data: {
               ...item,
+              fechaCita: asDate(item.fechaCita),
               createdAt: asDate(item.createdAt) ?? new Date(),
               animalId: Number(item.animalId),
             },
@@ -327,6 +332,12 @@ export const importDatabaseBackup = async (req: Request, res: Response) => {
       maxWait: 10_000,
       timeout: 120_000,
     });
+
+    for (const table of ["Voluntario", "CitaVoluntariado"]) {
+      await prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('"${table}"', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM "${table}"), 1), 1), EXISTS(SELECT 1 FROM "${table}"))`,
+      );
+    }
 
     res.json({
       message: "Backup importado correctamente",

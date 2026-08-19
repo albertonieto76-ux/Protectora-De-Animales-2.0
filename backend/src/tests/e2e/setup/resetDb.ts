@@ -6,9 +6,13 @@ export const resetDb = async () => {
       "CitaVoluntariado",
       "SolicitudAdopcion",
       "Donacion",
+      "TipoPago",
       "Voluntario",
+      "AsistenteEvento",
       "Animal",
-      "Evento"
+      "Evento",
+      "Usuario",
+      "SecurityAuditLog"
     RESTART IDENTITY CASCADE;
   `);
 };

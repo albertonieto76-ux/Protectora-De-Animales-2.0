@@ -91,10 +91,7 @@ export default function DonacionesPage() {
                         <input
                             placeholder="Cantidad"
                             value={form.cantidad}
-                            onChange={(e) => {
-                                setSelectedDonationType("");
-                                setForm((prev) => ({ ...prev, cantidad: e.target.value, tipoDonacion: "" }));
-                            }}
+                            onChange={(e) => setForm((prev) => ({ ...prev, cantidad: e.target.value }))}
                         />
                         <input
                             placeholder="Nombre"

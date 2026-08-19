@@ -218,6 +218,11 @@
   color: #2563eb;
 }
 
+.badge-pendiente_cita {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
 .badge-cancelada {
   background-color: #fee2e2;
   color: #dc2626;
@@ -546,6 +551,11 @@
 .adoption-day-status.pending {
   background: #fef3c7;
   color: #b45309;
+}
+
+.adoption-day-status.appointment {
+  background: #e0e7ff;
+  color: #3730a3;
 }
 
 .adoption-day-status.approved {
@@ -879,6 +889,22 @@
   letter-spacing: 0.01em;
 }
 
+.donation-search-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+}
+
+.donation-search-filters .form-group {
+  width: min(360px, 100%);
+  margin: 0;
+}
+
+.donation-search-filters .admin-btn-secondary {
+  min-height: 42px;
+}
+
 .admin-btn-primary,
 .admin-btn-secondary,
 .admin-btn-danger {
@@ -1026,6 +1052,16 @@
 
   .admin-header {
     padding: 0.8rem;
+  }
+
+  .donation-search-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .donation-search-filters .form-group,
+  .donation-search-filters .admin-btn-secondary {
+    width: 100%;
   }
 
   .admin-selection-panel {

@@ -153,6 +153,8 @@ export const createAdopcion = (data) =>
     request("/adoptions", { method: "POST", body: JSON.stringify(data) });
 export const updateAdopcionStatus = (id, estado) =>
     request(`/adoptions/${id}`, { method: "PUT", body: JSON.stringify({ estado }) });
+export const updateAdopcion = (id, data) =>
+    request(`/adoptions/${id}`, { method: "PUT", body: JSON.stringify(data) });
 export const deleteAdopcion = (id) =>
     request(`/adoptions/${id}`, { method: "DELETE" });
 
